@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>爱物理 · 力与运动仿真平台</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%233b82f6'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'>物</text></svg>" />
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部栏 -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">爱物理</span>
+        <span class="sub">力与运动仿真平台</span>
+      </div>
+      <nav class="modules">
+        <a class="module active" data-mod="forcemotion">力与运动</a>
+        <a class="module" data-mod="plateworld" title="板块环境">板块环境</a>
+        <a class="module" data-mod="optics" title="光学">光学</a>
+        <a class="module" data-mod="electric" title="电学">电学</a>
+      </nav>
+      <div class="mode-switch" id="mode-switch">
+        <button class="mod-btn active" id="btn-mode-edit">编辑环境</button>
+        <button class="mod-btn" id="btn-mode-sim">仿真环境</button>
+      </div>
+      <div class="top-actions">
+        <button id="btn-new" class="tbtn" title="新建 (清空画布)">新建</button>
+        <button id="btn-save" class="tbtn" title="保存方案">保存方案</button>
+        <button id="btn-export-gif" class="tbtn" title="导出 GIF 动画">🎬 导出 GIF</button>
+        <button id="btn-mine" class="tbtn" title="我的方案">我的方案</button>
+        <button id="btn-share" class="tbtn primary" title="分享方案">分享</button>
+        <span class="user" id="user-info">未登录</span>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- 左侧工具栏 -->
+      <aside class="toolbar" id="toolbar">
+        <div class="tool-group" data-group="通用">
+          <button class="tool active" data-tool="select" title="选择 (V)">
+            <svg viewBox="0 0 24 24"><path d="M5 3l14 7-6 1.5L10 18z" /></svg>
+            <span>选择</span>
+          </button>
+          <button class="tool" data-tool="pan" title="平移画布 (H)">
+            <svg viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>平移</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="力学">
+          <button class="tool" data-tool="particle" title="质点 (P)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /></svg>
+            <span>质点</span>
+          </button>
+          <button class="tool" data-tool="ground" title="地面 (G)">
+            <svg viewBox="0 0 24 24"><path d="M3 16h18M6 16l2 3M11 16l2 3M16 16l2 3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>地面</span>
+          </button>
+          <button class="tool" data-tool="arcground" title="圆弧地面 (A)">
+            <svg viewBox="0 0 24 24"><path d="M3 18a9 9 0 0 1 18 0" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>圆弧地面</span>
+          </button>
+          <button class="tool" data-tool="conveyor" title="传送带 (C)">
+            <svg viewBox="0 0 24 24"><ellipse cx="6" cy="12" rx="3" ry="5"/><ellipse cx="18" cy="12" rx="3" ry="5"/><path d="M6 7h12M6 17h12" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>传送带</span>
+          </button>
+          <button class="tool" data-tool="spring" title="弹簧 (S)">
+            <svg viewBox="0 0 24 24"><path d="M3 12h2l2-5 2 10 2-10 2 10 2-10 2 10 2-5h2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+            <span>弹簧</span>
+          </button>
+          <button class="tool" data-tool="rope" title="摆线/绳 (O)">
+            <svg viewBox="0 0 24 24"><path d="M12 3v13" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="18" r="3"/></svg>
+            <span>摆线</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="场与源">
+          <button class="tool" data-tool="emfield" title="电磁场 (E)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 12h10M12 7v10" stroke="currentColor" stroke-width="1.2"/></svg>
+            <span>电磁场</span>
+          </button>
+          <button class="tool" data-tool="source" title="粒子源 (N)">
+            <svg viewBox="0 0 24 24"><path d="M4 12h10M14 12l-3-3M14 12l-3 3" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="19" cy="12" r="2"/></svg>
+            <span>粒子源</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="标注">
+          <button class="tool" data-tool="text" title="文本 (T)">
+            <svg viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M9 19h6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>文本</span>
+          </button>
+          <button class="tool" data-tool="graph" title="函数图像 (F)">
+            <svg viewBox="0 0 24 24"><path d="M3 3v18h18M6 16c4-1 6-7 12-9" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+            <span>函数图像</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- 画布区 -->
+      <section class="stage">
+        <canvas id="canvas"></canvas>
+
+        <!-- 视图控制 右上 -->
+        <div class="view-ctrl">
+          <button id="vc-grid" class="vc active" title="网格">网格</button>
+          <button id="vc-axis" class="vc active" title="坐标轴">坐标轴</button>
+          <button id="vc-ruler" class="vc active" title="标尺">标尺</button>
+          <button id="vc-trail" class="vc active" title="轨迹">轨迹</button>
+          <button id="vc-vel" class="vc active" title="速度箭头">速度</button>
+          <button id="vc-zoomin" class="vc" title="放大">＋</button>
+          <button id="vc-zoomout" class="vc" title="缩小">－</button>
+          <button id="vc-fit" class="vc" title="重置视图">复位</button>
+        </div>
+
+        <!-- 模式标签 左上 -->
+        <div class="mode-tag" id="mode-tag">编辑环境</div>
+
+        <!-- 提示条 -->
+        <div class="hint" id="hint">提示：选择左侧工具，在画布上绘制对象</div>
+
+        <!-- 仿真控制栏 底部 -->
+        <div class="simbar" id="simbar">
+          <div class="sim-left">
+            <button id="sim-play" class="sim-btn primary" title="开始/暂停仿真 (空格)">
+              <svg viewBox="0 0 24 24"><path id="play-icon" d="M8 5v14l11-7z"/></svg>
+              <span id="play-label">仿真</span>
+            </button>
+            <button id="sim-step" class="sim-btn" title="单步 (.)">
+              <svg viewBox="0 0 24 24"><path d="M6 5v14l9-7zM16 5h2v14h-2z"/></svg>
+              <span>单步</span>
+            </button>
+            <button id="sim-reset" class="sim-btn" title="重置 (R)">
+              <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+              <span>重置</span>
+            </button>
+            <label class="sim-speed">
+              速度
+              <input id="sim-speed" type="range" min="0.1" max="3" step="0.1" value="1" />
+              <span id="sim-speed-val">1.0×</span>
+            </label>
+            <label class="sim-mode">
+              模式
+              <select id="sim-mode">
+                <option value="step">步进仿真</option>
+                <option value="realtime">实时仿真</option>
+              </select>
+            </label>
+          </div>
+          <div class="sim-right">
+            <span class="sim-stat">时间 <b id="sim-time">0.00</b> s</span>
+            <span class="sim-stat">步数 <b id="sim-steps">0</b></span>
+            <span class="sim-stat" id="sim-fps">— fps</span>
+            <button id="sim-settings" class="sim-btn" title="仿真设置">⚙</button>
+            <button id="btn-graph-win" class="sim-btn primary" title="函数图像窗口">📈 图像</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧属性面板 -->
+      <aside class="props" id="props">
+        <div class="props-head">
+          <span>属性面板</span>
+          <select id="props-target" title="切换对象"></select>
+        </div>
+        <div class="props-body" id="props-body">
+          <div class="props-empty">
+            <p>未选中对象</p>
+            <small>点击「选择」工具，再点画布中的构件</small>
+          </div>
+        </div>
+        <div class="props-foot">
+          <button id="prop-delete" class="sim-btn danger" title="删除选中 (Delete)">删除</button>
+          <button id="prop-duplicate" class="sim-btn" title="复制">复制</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 我的方案 弹窗 -->
+    <div class="modal-mask" id="modal-mine" hidden>
+      <div class="modal">
+        <div class="modal-head"><h3>我的方案</h3><button class="modal-x" data-close>×</button></div>
+        <div class="modal-body" id="mine-list"></div>
+      </div>
+    </div>
+
+    <!-- 分享 弹窗 -->
+    <div class="modal-mask" id="modal-share" hidden>
+      <div class="modal">
+        <div class="modal-head"><h3>分享方案</h3><button class="modal-x" data-close>×</button></div>
+        <div class="modal-body">
+          <p>复制下方链接分享你的方案：</p>
+          <input id="share-url" class="input" readonly />
+          <div class="modal-actions">
+            <button id="share-copy" class="sim-btn primary">复制链接</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 仿真设置 弹窗 -->
+    <div class="modal-mask" id="modal-settings" hidden>
+      <div class="modal">
+        <div class="modal-head"><h3>仿真设置</h3><button class="modal-x" data-close>×</button></div>
+        <div class="modal-body" id="settings-body"></div>
+      </div>
+    </div>
+
+    <!-- 函数图像弹窗 -->
+    <div class="modal-mask" id="modal-graph" hidden>
+      <div class="modal modal-lg">
+        <div class="modal-head"><h3>运动学图像</h3><button class="modal-x" data-close>×</button></div>
+        <div class="modal-body" style="padding:10px 14px;">
+          <div id="graph-win-toolbar" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+            <label class="sim-mode">物理量
+              <select id="gw-qty" style="width:110px;padding:5px 6px;border-radius:6px;border:1px solid var(--line);">
+                <option value="v">速度 v</option><option value="s">位移 s</option>
+                <option value="a">加速度 a</option><option value="x">x</option><option value="y">y</option>
+              </select>
+            </label>
+            <label class="sim-mode">跟踪
+              <select id="gw-target" style="width:100px;padding:5px 6px;border-radius:6px;border:1px solid var(--line);">
+              </select>
+            </label>
+            <button id="gw-clear" class="sim-btn">清空数据</button>
+          </div>
+          <canvas id="graph-canvas" width="520" height="300" style="background:#fafbfc;border:1px solid var(--line);border-radius:8px;width:100%;max-width:520px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

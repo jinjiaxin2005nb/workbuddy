@@ -123,16 +123,6 @@ export function make(type, opts = {}) {
         shape: opts.shape || 'circle', // circle / cross / diamond
       });
     case 'helpline':
-      // 场分割线：用于定义场区域的边界线段（不参与物理计算，仅用于填充场检测）
-      return Object.assign(base, {
-        name: opts.name || '场分割线', color: opts.color || '#94a3b8',
-        segments: opts.segments || [], // [{x1,y1,x2,y2},...] 分割线段数组
-        closed: !!opts.closed, // 是否封闭
-        fieldType: opts.fieldType || null, // 'E' | 'B' | 'ACE' | 'ACB' 待填充的场类型
-        Ex: opts.Ex ?? 0, Ey: opts.Ey ?? 0, B: opts.B ?? 0,
-        colorE: opts.colorE || '#ef4444', colorB: opts.colorB || '#3b82f6',
-      });
-    case 'helpline':
       // 辅助线：标注用线段，不参与物理计算
       return Object.assign(base, {
         name: opts.name || '辅助线', color: opts.color || '#f59e0b',

@@ -72,6 +72,13 @@ export class PropsPanel {
       case 'source': this.sourceFields(o, b); break;
       case 'text': this.textFields(o, b); break;
       case 'graph': this.graphFields(o, b); break;
+      // V2 新增
+      case 'pipe': this.pipeFields(o, b); break;
+      case 'screen': this.screenFields(o, b); break;
+      case 'helppoint': this.helpPointFields(o, b); break;
+      case 'helpline': this.helpLineFields(o, b); break;
+      case 'interpsource': this.interpSourceFields(o, b); break;
+      case 'formulasource': this.formulaSourceFields(o, b); break;
     }
     b.appendChild(this.visibleField(o));
   }
@@ -245,6 +252,63 @@ export class PropsPanel {
     b.appendChild(this.field('y', 'number', fmt(o.y), v => { o.y = v; this.cb.onRefresh(); }, { step: 0.1 }));
     b.appendChild(this.field('宽', 'number', o.w, v => { o.w = v; this.cb.onRefresh(); }, { step: 0.1 }));
     b.appendChild(this.field('高', 'number', o.h, v => { o.h = v; this.cb.onRefresh(); }, { step: 0.1 }));
+  }
+
+  // ===== V2 新增对象属性表单 =====
+  pipeFields(o, b) {
+    const t = document.createElement('div'); t.className = 'sect-title'; t.textContent = '圆管属性'; b.appendChild(t);
+    b.appendChild(this.field('圆心 x', 'number', fmt(o.cx), v => { o.cx = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('圆心 y', 'number', fmt(o.cy), v => { o.cy = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('外半径 r (m)', 'number', fmt(o.r), v => { o.r = Math.max(0.2, v); o.innerR = Math.min(o.innerR || v * 0.8, v - 0.1); this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('内半径 (m)', 'number', fmt(o.innerR), v => { o.innerR = Math.max(0.05, Math.min(v, o.r - 0.1)); this.cb.onRefresh(); }, { step: 0.05 }));
+    b.appendChild(this.field('摩擦系数 μ', 'number', o.friction ?? 0.2, v => { o.friction = Math.max(0, v); this.cb.onCommit(); }, { step: 0.05 }));
+    b.appendChild(this.field('弹性系数 e', 'number', o.restitution ?? 0.5, v => { o.restitution = clamp01(v); this.cb.onCommit(); }, { step: 0.05 }));
+  }
+  screenFields(o, b) {
+    b.appendChild(this.field('x', 'number', fmt(o.x), v => { o.x = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('y', 'number', fmt(o.y), v => { o.y = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('宽度 (m)', 'number', fmt(o.w), v => { o.w = Math.max(0.05, v); this.cb.onRefresh(); }, { step: 0.05 }));
+    b.appendChild(this.field('高度 (m)', 'number', fmt(o.h), v => { o.h = Math.max(0.2, v); this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('淡出时间 (s)', 'number', o.fadeTime ?? 3, v => { o.fadeTime = Math.max(0.5, v); }, { step: 0.5 }));
+    b.appendChild(this.field('最大记录数', 'number', o.maxHits ?? 200, v => { o.maxHits = Math.max(10, v | 0); }, { step: 20 }));
+  }
+  helpPointFields(o, b) {
+    b.appendChild(this.field('x 坐标 (m)', 'number', fmt(o.x), v => { o.x = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('y 坐标 (m)', 'number', fmt(o.y), v => { o.y = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('形状', 'select', o.shape || 'circle', v => { o.shape = v; this.cb.onRefresh(); }, { options: [{ v: 'circle', t: '圆形' }, { v: 'cross', t: '十字' }, { v: 'diamond', t: '菱形' }] }));
+    b.appendChild(this.field('标签文字', 'text', o.text || '', v => { o.text = v; this.cb.onRefresh(); this.cb.onCommit(); }));
+    b.appendChild(this.field('大小', 'number', o.size ?? 11, v => { o.size = v; this.cb.onRefresh(); }, { step: 1 }));
+  }
+  helpLineFields(o, b) {
+    b.appendChild(this.field('起点 x', 'number', fmt(o.ax), v => { o.ax = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('起点 y', 'number', fmt(o.ay), v => { o.ay = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('终点 x', 'number', fmt(o.bx), v => { o.bx = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('终点 y', 'number', fmt(o.by), v => { o.by = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('样式', 'select', o.style || 'solid', v => { o.style = v; this.cb.onRefresh(); }, { options: [{ v: 'solid', t: '实线' }, { v: 'dashed', t: '虚线' }, { v: 'dotted', t: '点线' }] }));
+    b.appendChild(this.field('箭头', 'check', !!o.arrow, v => { o.arrow = v; this.cb.onRefresh(); }, { text: '末端带箭头' }));
+    b.appendChild(this.field('标签文字', 'text', o.text || '', v => { o.text = v; this.cb.onRefresh(); this.cb.onCommit(); }));
+  }
+  interpSourceFields(o, b) {
+    b.appendChild(this.field('端点A x', 'number', fmt(o.ax), v => { o.ax = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('端点A y', 'number', fmt(o.ay), v => { o.ay = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('端点B x', 'number', fmt(o.bx), v => { o.bx = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('端点B y', 'number', fmt(o.by), v => { o.by = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('发射角度 (°)', 'number', (o.angle * 180 / Math.PI).toFixed(0), v => { o.angle = v * Math.PI / 180; this.cb.onRefresh(); }, { step: 5 }));
+    b.appendChild(this.field('初速 (m/s)', 'number', o.speed ?? 3, v => { o.speed = v; this.cb.onCommit(); }, { step: 0.1 }));
+    b.appendChild(this.field('发射率 (个/s)', 'number', o.rate ?? 4, v => { o.rate = v; this.cb.onCommit(); }, { step: 0.5 }));
+    b.appendChild(this.field('插值数量', 'number', o.count ?? 5, v => { o.count = Math.max(1, v | 0); }, { step: 1 }));
+    b.appendChild(this.field('电荷量 q', 'number', o.charge ?? 0, v => { o.charge = v; this.cb.onCommit(); }, { step: 0.1 }));
+    b.appendChild(this.field('质量 m', 'number', o.mass ?? 1, v => { o.mass = v; this.cb.onCommit(); }, { step: 0.1 }));
+  }
+  formulaSourceFields(o, b) {
+    b.appendChild(this.field('x', 'number', fmt(o.x), v => { o.x = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('y', 'number', fmt(o.y), v => { o.y = v; this.cb.onRefresh(); }, { step: 0.1 }));
+    b.appendChild(this.field('发射角度 (°)', 'number', (o.angle * 180 / Math.PI).toFixed(0), v => { o.angle = v * Math.PI / 180; this.cb.onRefresh(); }, { step: 5 }));
+    b.appendChild(this.field('发射率 (个/s)', 'number', o.rate ?? 2, v => { o.rate = v; this.cb.onCommit(); }, { step: 0.5 }));
+    b.appendChild(this.field('vx 公式', 'textarea', o.vxExpr || '', v => { o.vxExpr = v; this.cb.onCommit(); }, { hint: '支持变量: t(时间), pi, sin/cos 等。例: 3*cos(t*2)' }));
+    b.appendChild(this.field('vy 公式', 'textarea', o.vyExpr || '', v => { o.vyExpr = v; this.cb.onCommit(); }, { hint: '支持变量: t(时间), pi, sin/cos 等。例: 3*sin(t*2)' }));
+    b.appendChild(this.field('电荷量 q', 'number', o.charge ?? 0, v => { o.charge = v; this.cb.onCommit(); }, { step: 0.1 }));
+    b.appendChild(this.field('质量 m', 'number', o.mass ?? 1, v => { o.mass = v; this.cb.onCommit(); }, { step: 0.1 }));
   }
 }
 

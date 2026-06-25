@@ -38,60 +38,112 @@
     <div class="main">
       <!-- 左侧工具栏 -->
       <aside class="toolbar" id="toolbar">
-        <div class="tool-group" data-group="通用">
+        <div class="tool-group" data-group="选择">
           <button class="tool active" data-tool="select" title="选择 (V)">
             <svg viewBox="0 0 24 24"><path d="M5 3l14 7-6 1.5L10 18z" /></svg>
             <span>选择</span>
           </button>
-          <button class="tool" data-tool="pan" title="平移画布 (H)">
-            <svg viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>平移</span>
-          </button>
         </div>
-        <div class="tool-group" data-group="力学">
+        <div class="tool-group" data-group="质点">
           <button class="tool" data-tool="particle" title="质点 (P)">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /></svg>
             <span>质点</span>
           </button>
-          <button class="tool" data-tool="ground" title="地面 (G)">
-            <svg viewBox="0 0 24 24"><path d="M3 16h18M6 16l2 3M11 16l2 3M16 16l2 3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            <span>地面</span>
+          <button class="tool" data-tool="source" title="粒子 (M)">
+            <svg viewBox="0 0 24 24"><path d="M4 12h10M14 12l-3-3M14 12l-3 3" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="19" cy="12" r="2"/></svg>
+            <span>粒子 (M)</span>
           </button>
-          <button class="tool" data-tool="arcground" title="圆弧地面 (A)">
+          <button class="tool" data-tool="interpsource" title="插值粒子源">
+            <svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><path d="M6 12h12" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/><circle cx="18" cy="12" r="2"/></svg>
+            <span>插值粒子源</span>
+          </button>
+          <button class="tool" data-tool="formulasource" title="公式粒子源">
+            <svg viewBox="0 0 24 24"><text x="5" y="16" font-size="14" font-weight="bold" font-family="serif">f</text><path d="M4 12h10M14 12l-3-3M14 12l-3 3" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="19" cy="12" r="2"/></svg>
+            <span>公式粒子源</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="场分划线">
+          <button class="tool" data-tool="ground" title="直线 (L)">
+            <svg viewBox="0 0 24 24"><path d="M3 18L21 6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>直线 (L)</span>
+          </button>
+          <button class="tool" data-tool="arcground" title="圆弧 (A)">
+            <svg viewBox="0 0 24 24"><path d="M3 18a9 9 0 0 1 18 0" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>圆弧 (A)</span>
+          </button>
+          <button class="tool" data-tool="emfield" title="矩形 (R)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            <span>矩形 (R)</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="传送带">
+          <button class="tool" data-tool="conveyor" title="传送带 (C)">
+            <svg viewBox="0 0 24 24"><ellipse cx="6" cy="12" rx="3" ry="5"/><ellipse cx="18" cy="12" rx="3" ry="5"/><path d="M6 7h12M6 17h12" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>传送带模型</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="弹簧">
+          <button class="tool" data-tool="spring" title="弹簧 (T)">
+            <svg viewBox="0 0 24 24"><path d="M3 12h2l2-5 2 10 2-10 2 10 2-10 2 10 2-5h2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+            <span>弹簧 (T)</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="地面">
+          <button class="tool" data-tool="ground" title="直线地面">
+            <svg viewBox="0 0 24 24"><path d="M3 16h18M6 16l2 3M11 16l2 3M16 16l2 3" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>直线地面</span>
+          </button>
+          <button class="tool" data-tool="arcground" title="圆弧地面">
             <svg viewBox="0 0 24 24"><path d="M3 18a9 9 0 0 1 18 0" stroke="currentColor" stroke-width="2" fill="none"/></svg>
             <span>圆弧地面</span>
           </button>
-          <button class="tool" data-tool="conveyor" title="传送带 (C)">
-            <svg viewBox="0 0 24 24"><ellipse cx="6" cy="12" rx="3" ry="5"/><ellipse cx="18" cy="12" rx="3" ry="5"/><path d="M6 7h12M6 17h12" stroke="currentColor" stroke-width="1.5"/></svg>
-            <span>传送带</span>
-          </button>
-          <button class="tool" data-tool="spring" title="弹簧 (S)">
-            <svg viewBox="0 0 24 24"><path d="M3 12h2l2-5 2 10 2-10 2 10 2-10 2 10 2-5h2" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
-            <span>弹簧</span>
-          </button>
-          <button class="tool" data-tool="rope" title="摆线/绳 (O)">
-            <svg viewBox="0 0 24 24"><path d="M12 3v13" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="18" r="3"/></svg>
-            <span>摆线</span>
+          <button class="tool" data-tool="pipe" title="圆管">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1" stroke-dasharray="3 2" fill="none"/></svg>
+            <span>圆管</span>
           </button>
         </div>
-        <div class="tool-group" data-group="场与源">
-          <button class="tool" data-tool="emfield" title="电磁场 (E)">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 12h10M12 7v10" stroke="currentColor" stroke-width="1.2"/></svg>
-            <span>电磁场</span>
+        <div class="tool-group" data-group="填充场">
+          <button class="tool" data-tool="efield" title="电场 (E)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.08)"/><text x="7" y="15" fill="#ef4444" font-size="12" font-weight="bold">E</text></svg>
+            <span>电场 (E)</span>
           </button>
-          <button class="tool" data-tool="source" title="粒子源 (N)">
-            <svg viewBox="0 0 24 24"><path d="M4 12h10M14 12l-3-3M14 12l-3 3" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="19" cy="12" r="2"/></svg>
-            <span>粒子源</span>
+          <button class="tool" data-tool="bfield" title="磁场 (B)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.08)"/><circle cx="12" cy="12" r="4" stroke="#3b82f6" stroke-width="1.5" fill="none"/><text x="10.5" y="15" fill="#3b82f6" font-size="11" font-weight="bold">B</text></svg>
+            <span>磁场 (B)</span>
+          </button>
+          <button class="tool" data-tool="acefield" title="交变电场">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.06)" stroke-dasharray="5 3"/><text x="7" y="15" fill="#ef4444" font-size="12" font-weight="bold">E~</text><text x="17" y="9" fill="#ef4444" font-size="8">AC</text></svg>
+            <span>交变电场</span>
+          </button>
+          <button class="tool" data-tool="acbfield" title="交变磁场">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.06)" stroke-dasharray="5 3"/><circle cx="12" cy="12" r="4" stroke="#3b82f6" stroke-width="1.5" fill="none"/><text x="10.5" y="15" fill="#3b82f6" font-size="11" font-weight="bold">B~</text><text x="17" y="9" fill="#3b82f6" font-size="8">AC</text></svg>
+            <span>交变磁场</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="检测">
+          <button class="tool" data-tool="screen" title="荧光屏">
+            <svg viewBox="0 0 24 24"><rect x="6" y="3" width="3" height="18" rx="1" fill="#22c55e" opacity="0.3"/><rect x="6" y="3" width="3" height="18" rx="1" stroke="#22c55e" stroke-width="2" stroke-dasharray="3 2"/><circle cx="7.5" cy="8" r="2" fill="#22c55e"/><circle cx="7.5" cy="14" r="1.5" fill="#22c55e"/></svg>
+            <span>荧光屏</span>
+          </button>
+        </div>
+        <div class="tool-group" data-group="函数图像">
+          <button class="tool" data-tool="graph" title="函数图像">
+            <svg viewBox="0 0 24 24"><path d="M3 3v18h18M6 16c4-1 6-7 12-9" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+            <span>函数图像</span>
           </button>
         </div>
         <div class="tool-group" data-group="标注">
-          <button class="tool" data-tool="text" title="文本 (T)">
-            <svg viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M9 19h6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            <span>文本</span>
+          <button class="tool" data-tool="helppoint" title="辅助点 (P)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke="#f59e0b" stroke-width="2" fill="#fef3c7"/><line x1="8" y1="12" x2="16" y2="12" stroke="#f59e0b" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="16" stroke="#f59e0b" stroke-width="2"/></svg>
+            <span>辅助点 (P)</span>
           </button>
-          <button class="tool" data-tool="graph" title="函数图像 (F)">
-            <svg viewBox="0 0 24 24"><path d="M3 3v18h18M6 16c4-1 6-7 12-9" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
-            <span>函数图像</span>
+          <button class="tool" data-tool="helpline" title="辅助线 (H/U)">
+            <svg viewBox="0 0 24 24"><path d="M4 20L20 4" stroke="#f59e0b" stroke-width="2"/><path d="M18 6l4 4M18 6l-4 4" stroke="#f59e0b" stroke-width="1.5" fill="none"/></svg>
+            <span>辅助线 (U)</span>
+          </button>
+          <button class="tool" data-tool="text" title="文本框">
+            <svg viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M9 19h6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>文本框</span>
           </button>
         </div>
       </aside>

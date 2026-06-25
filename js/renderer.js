@@ -417,9 +417,29 @@ export class Renderer {
     } else if (o.type === 'emfield' || o.type === 'graph') {
       const a = cam.s(o.x, o.y + o.h), b = cam.s(o.x + o.w, o.y);
       ctx.strokeRect(a.x - 2, a.y - 2, b.x - a.x + 4, b.y - a.y + 4);
-    } else if (o.type === 'source' || o.type === 'text') {
+    } else if (o.type === 'source' || o.type === 'text' || o.type === 'helppoint' || o.type === 'formulasource') {
       const s = cam.s(o.x, o.y);
       ctx.beginPath(); ctx.arc(s.x, s.y, 14, 0, TAU); ctx.stroke();
+    } else if (o.type === 'pipe') {
+      const pts = arcPoints(o); ctx.beginPath();
+      const a = cam.s(pts[0].x, pts[0].y); ctx.moveTo(a.x, a.y);
+      for (const p of pts) { const s2 = cam.s(p.x, p.y); ctx.lineTo(s2.x, s2.y); }
+      ctx.lineWidth = (o.thickness || 0.10) * cam.scale + 4; ctx.stroke();
+      // 内壁选中
+      if (o.innerR > 0.1) {
+        const innerPts = arcPoints({ cx: o.cx, cy: o.cy, r: o.innerR, a0: o.a0, a1: o.a1, _seg: o._seg || 32 });
+        ctx.beginPath();
+        const ia = cam.s(innerPts[0].x, innerPts[0].y); ctx.moveTo(ia.x, ia.y);
+        for (const p of innerPts) { const s3 = cam.s(p.x, p.y); ctx.lineTo(s3.x, s3.y); }
+        ctx.stroke();
+      }
+    } else if (o.type === 'screen' || o.type === 'graph') {
+      const a = cam.s(o.x, o.y + o.h), b = cam.s(o.x + o.w, o.y);
+      ctx.strokeRect(a.x - 2, a.y - 2, b.x - a.x + 4, b.y - a.y + 4);
+    } else if (o.type === 'helpline' || o.type === 'interpsource') {
+      const sa = cam.s(o.ax || o.x, o.ay || o.y), sb = cam.s(o.bx || o.x, o.by || o.y);
+      ctx.beginPath(); ctx.moveTo(sa.x - 6, sa.y - 6); ctx.lineTo(sa.x + 6, sa.y + 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sb.x - 6, sb.y - 6); ctx.lineTo(sb.x + 6, sb.y + 6); ctx.stroke();
     }
     ctx.setLineDash([]);
   }
@@ -445,6 +465,23 @@ export class Renderer {
     } else if (p.type === 'spring' || p.type === 'rope') {
       if (!p.a || !p.b) return;
       const a = cam.s(p.a.x, p.a.y), b = cam.s(p.b.x, p.b.y);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    } else if (p.type === 'pipe') {
+      if (!p.r) return;
+      const pts = arcPoints({ cx: p.cx || 0, cy: p.cy || 0, r: p.r, a0: Math.PI, a1: 0, _seg: 24 });
+      ctx.beginPath(); const a = cam.s(pts[0].x, pts[0].y); ctx.moveTo(a.x, a.y);
+      for (const pt of pts) { const s = cam.s(pt.x, pt.y); ctx.lineTo(s.x, s.y); }
+      ctx.stroke();
+    } else if (p.type === 'screen' || p.type === 'emfield' || p.type === 'graph') {
+      if (typeof p.w === 'undefined' || typeof p.h === 'undefined') return;
+      const a = cam.s(p.x, p.y + p.h), b = cam.s(p.x + p.w, p.y);
+      ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    } else if (p.type === 'helppoint' || p.type === 'formulasource' || p.type === 'source') {
+      const s = cam.s(p.x || 0, p.y || 0);
+      ctx.beginPath(); ctx.arc(s.x, s.y, 10, 0, TAU); ctx.stroke();
+    } else if (p.type === 'helpline' || p.type === 'interpsource') {
+      if (!p.a) return;
+      const a = cam.s(p.ax || p.a.x, p.ay || p.a.y), b = cam.s(p.bx || p.b?.x, p.by || p.b?.y || p.ay || p.a.y);
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
     ctx.setLineDash([]); ctx.globalAlpha = 1;
@@ -473,7 +510,145 @@ export class Renderer {
     this.drawPreview();
     const sel = world.get(this.selected);
     if (sel) this.drawSelection(sel);
+    // V2 新增对象
+    for (const o of world.objects) if (o.type === 'pipe' && o.visible !== false) this.drawPipe(o);
+    for (const o of world.objects) if (o.type === 'screen' && o.visible !== false) this.drawScreen(o);
+    for (const o of world.objects) if (o.type === 'helppoint' && o.visible !== false) this.drawHelpPoint(o);
+    for (const o of world.objects) if (o.type === 'helpline' && o.visible !== false) this.drawHelpLine(o);
+    for (const o of world.objects) if (o.type === 'interpsource' && o.visible !== false) this.drawInterpSource(o);
+    for (const o of world.objects) if (o.type === 'formulasource' && o.visible !== false) this.drawFormulaSource(o);
     this.drawRuler();
+  }
+
+  // ===== V2 新增绘制函数 =====
+  drawPipe(pipe) {
+    const { ctx, cam } = this;
+    const pts = arcPoints({ cx: pipe.cx, cy: pipe.cy, r: pipe.r, a0: pipe.a0, a1: pipe.a1, _seg: pipe._seg || 32 });
+    // 外壁
+    ctx.strokeStyle = pipe.color; ctx.lineWidth = (pipe.thickness || 0.10) * cam.scale * 2;
+    ctx.lineCap = 'round'; ctx.beginPath();
+    const a0 = cam.s(pts[0].x, pts[0].y); ctx.moveTo(a0.x, a0.y);
+    for (let i = 1; i < pts.length; i++) { const s = cam.s(pts[i].x, pts[i].y); ctx.lineTo(s.x, s.y); }
+    ctx.stroke();
+    // 内壁（虚线）
+    if (pipe.innerR > 0.1) {
+      const innerPts = arcPoints({ cx: pipe.cx, cy: pipe.cy, r: pipe.innerR, a0: pipe.a0, a1: pipe.a1, _seg: pipe._seg || 32 });
+      ctx.strokeStyle = rgba(pipe.color, 0.4); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      const ia0 = cam.s(innerPts[0].x, innerPts[0].y); ctx.moveTo(ia0.x, ia0.y);
+      for (let i = 1; i < innerPts.length; i++) { const s = cam.s(innerPts[i].x, innerPts[i].y); ctx.lineTo(s.x, s.y); }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    // 标签
+    const mc = cam.s(pipe.cx, pipe.cy);
+    ctx.fillStyle = '#64748b'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('圆管 r=' + fmt(pipe.r), mc.x, mc.y - pipe.r * cam.scale - 8);
+  }
+
+  drawScreen(scr) {
+    const { ctx, cam } = this;
+    const a = cam.s(scr.x, scr.y + scr.h), b = cam.s(scr.x + scr.w, scr.y);
+    // 屏幕背景
+    ctx.fillStyle = rgba('#22c55e', 0.08); ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.beginPath(); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.setLineDash([]);
+    // 击中亮点
+    for (const h of scr.hits) {
+      const age = this._t ? (this._t - h.t) : 0;
+      const alpha = Math.max(0.15, 1 - age / (scr.fadeTime || 3));
+      const hs = cam.s(h.x, h.y);
+      const hr = (h.radius || 0.15) * cam.scale * (1 - age / (scr.fadeTime * 2));
+      if (hr > 1) {
+        ctx.fillStyle = rgba(h.color || '#22c55e', alpha);
+        ctx.beginPath(); ctx.arc(hs.x, hs.y, Math.max(1, hr), 0, TAU); ctx.fill();
+      }
+    }
+    // 标签
+    ctx.fillStyle = '#22c55e'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('荧光屏', (a.x + b.x) / 2, a.y - 5);
+  }
+
+  drawHelpPoint(pt) {
+    const { ctx, cam } = this;
+    const s = cam.s(pt.x, pt.y);
+    const r = (pt.radius || 0.12) * cam.scale;
+    ctx.fillStyle = rgba(pt.color, 0.7); ctx.strokeStyle = pt.color; ctx.lineWidth = 1.5;
+    if (pt.shape === 'cross') {
+      ctx.beginPath(); ctx.moveTo(s.x - r, s.y); ctx.lineTo(s.x + r, s.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s.x, s.y - r); ctx.lineTo(s.x, s.y + r); ctx.stroke();
+    } else if (pt.shape === 'diamond') {
+      ctx.beginPath(); ctx.moveTo(s.x, s.y - r); ctx.lineTo(s.x + r, s.y);
+      ctx.lineTo(s.x, s.y + r); ctx.lineTo(s.x - r, s.y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else {
+      // circle default
+      ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
+    }
+    // 文字标签
+    if (pt.text) {
+      ctx.fillStyle = pt.color; ctx.font = `${pt.size || 11}px sans-serif`; ctx.textAlign = 'left';
+      ctx.fillText(pt.text, s.x + r + 3, s.y - r - 2);
+    }
+  }
+
+  drawHelpLine(ln) {
+    const { ctx, cam } = this;
+    const sa = cam.s(ln.ax, ln.ay), sb = cam.s(ln.bx, ln.by);
+    ctx.strokeStyle = ln.color || '#f59e0b'; ctx.lineWidth = 1.5;
+    if (ln.style === 'dashed') ctx.setLineDash([6, 4]);
+    else if (ln.style === 'dotted') ctx.setLineDash([2, 3]);
+    else ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(sa.x, sa.y); ctx.lineTo(sb.x, sb.y); ctx.stroke(); ctx.setLineDash([]);
+    // 箭头
+    if (ln.arrow) { this.arrow(sa.x, sa.y, sb.x, sb.y, ln.color || '#f59e0b', 1.5); }
+    // 文字标签
+    if (ln.text) {
+      const mx = (sa.x + sb.x) / 2, my = (sa.y + sb.y) / 2;
+      ctx.fillStyle = ln.color || '#f59e0b'; ctx.font = `${ln.size || 11}px sans-serif`; ctx.textAlign = 'left';
+      ctx.fillText(ln.text, mx + 5, my - 5);
+    }
+  }
+
+  drawInterpSource(src) {
+    const { ctx, cam } = this;
+    const sa = cam.s(src.ax, src.ay), sb = cam.s(src.bx, src.by);
+    // 连接线段（虚线）
+    ctx.strokeStyle = rgba(src.color, 0.35); ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(sa.x, sa.y); ctx.lineTo(sb.x, sb.y); ctx.stroke(); ctx.setLineDash([]);
+    // 插值点标记
+    for (let i = 0; i < (src.count || 5); i++) {
+      const fx = src.ax + (src.bx - src.ax) * (i / Math.max(1, (src.count || 5) - 1));
+      const fy = src.ay + (src.by - src.ay) * (i / Math.max(1, (src.count || 5) - 1));
+      const fs = cam.s(fx, fy);
+      ctx.fillStyle = src.color;
+      ctx.beginPath(); ctx.arc(fs.x, fs.y, 4, 0, TAU); ctx.fill();
+    }
+    // 复用 source 绘制逻辑：画发射方向箭头和名称
+    this.drawSource({
+      x: (src.ax + src.bx) / 2,
+      y: (src.ay + src.by) / 2,
+      angle: src.angle,
+      name: src.name || '插值粒子源',
+      color: src.color,
+      on: src.on,
+    });
+  }
+
+  drawFormulaSource(src) {
+    // 基本复用 source 样式但加公式标识
+    const { ctx, cam } = this;
+    const sp = cam.s(src.x, src.y);
+    ctx.fillStyle = src.color; ctx.beginPath(); ctx.arc(sp.x, sp.y, 9, 0, TAU); ctx.fill();
+    ctx.strokeStyle = shade(src.color, -40); ctx.lineWidth = 1.5; ctx.stroke();
+    // 公式标识
+    ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(8, 9)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('f', sp.x, sp.y + 1);
+    // 发射方向箭头
+    this.arrow(sp.x, sp.y, sp.x + Math.cos(src.angle) * 22, sp.y - Math.sin(src.angle) * 22, src.color, 2);
+    // 名称+公式预览
+    ctx.fillStyle = '#334155'; ctx.font = '11px sans-serif'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(src.name + (src.on ? '' : ' (关)'), sp.x + 12, sp.y - 10);
+    // 公式提示
+    ctx.fillStyle = '#ec4899'; ctx.font = '9px monospace';
+    ctx.fillText(`vx=${src.vxExpr}`, sp.x + 12, sp.y + 2);
   }
 
   _objById(id) { return this._world ? this._world.get(id) : null; }

@@ -79,8 +79,15 @@ export class Tools {
         }
       } else if (o.type === 'emfield' || o.type === 'graph') {
         if (w.x >= o.x && w.x <= o.x + o.w && w.y >= o.y && w.y <= o.y + o.h) return o;
-      } else if (o.type === 'source' || o.type === 'text') {
+      } else if (o.type === 'source' || o.type === 'text' || o.type === 'helppoint' || o.type === 'formulasource') {
         if (V.dist(w, o) <= 0.4) return o;
+      } else if (o.type === 'pipe') {
+        const d = V.dist(w, { x: o.cx, y: o.cy });
+        if (d <= o.r + 0.15 && d >= (o.innerR || 0) - 0.15) return o;
+      } else if (o.type === 'screen') {
+        if (w.x >= o.x && w.x <= o.x + o.w && w.y >= O.y && w.y <= o.y + o.h) return o;
+      } else if (o.type === 'helpline' || o.type === 'interpsource') {
+        if (pointSeg(w, { x: o.ax, y: o.ay }, { x: o.bx, y: o.by }).dist <= 0.2) return o;
       }
     }
     return null;
@@ -159,6 +166,56 @@ export class Tools {
         const t = make('text', { x: sw.x, y: sw.y, text: '文本' });
         this.world.add(t); this.onSelect(t); this.onCommit(); this.onToast('已添加文本，可在右侧编辑'); break;
       }
+      // ===== V2 新增工具 =====
+      case 'helppoint': {
+        const t = make('helppoint', { x: sw.x, y: sw.y });
+        this.world.add(t); this.onSelect(t); this.onCommit(); this.onToast('已添加辅助点'); break;
+      }
+      case 'helpline': {
+        if (!this.drawing) {
+          this.drawing = { type: 'helpline', ax: sw.x, ay: sw.y, bx: sw.x, by: sw.y };
+        } else {
+          this.drawing.bx = sw.x; this.drawing.by = sw.y;
+          this._finishHelpLine();
+        }
+        break;
+      }
+      case 'pipe': {
+        if (!this.drawing) { this.drawing = { type: 'pipe', cx: sw.x, cy: sw.y, r: 0, dragging: true }; }
+        else { this.drawing.dragging = false; this._finishPipe(); }
+        break;
+      }
+      case 'screen': {
+        if (this.drawing && (this.drawing.type === 'screen' || this.drawing.type === 'graph')) {
+          if (this.drawing.w > 0.3 && this.drawing.h > 0.3) this._finishRect();
+          else this.drawing = null;
+          this.onRefresh();
+        } else {
+          this.drawing = { type: 'screen', x: sw.x, y: sw.y, w: 0, h: 0, _sx: sw.x, _sy: sw.y };
+        }
+        break;
+      }
+      case 'interpsource': {
+        if (!this.drawing) {
+          this.drawing = { type: 'interpsource', ax: sw.x, ay: sw.y, bx: sw.x, by: sw.y, angle: 0, _setAngle: false };
+        } else if (!this.drawing._setAngle) {
+          const cx = (this.drawing.ax + this.drawing.bx) / 2;
+          const cy = (this.drawing.ay + this.drawing.by) / 2;
+          this.drawing.angle = Math.atan2(sw.y - cy, sw.x - cx);
+          this.drawing._setAngle = true;
+          this._finishInterpSource();
+        }
+        break;
+      }
+      case 'formulasource': {
+        if (!this.drawing) { this.drawing = { type: 'formulasource', x: sw.x, y: sw.y, angle: 0, _setAngle: false }; }
+        else if (!this.drawing._setAngle) {
+          this.drawing.angle = Math.atan2(sw.y - this.drawing.y, sw.x - this.drawing.x);
+          this.drawing._setAngle = true;
+          this._finishFormulaSource();
+        }
+        break;
+      }
     }
     this.onRefresh();
   }
@@ -186,6 +243,18 @@ export class Tools {
         if (!o.bId) { o.b.x = this.drag.ox + dx; o.b.y = this.drag.oy + dy; }
       } else if (o.type === 'rope') {
         if (!o.aId) { o.anchor.x = this.drag.ox + dx; o.anchor.y = this.drag.oy + dy; }
+      } else if (o.type === 'pipe') {
+        o.cx = this.drag.ox + dx; o.cy = this.drag.oy + dy;
+      } else if (o.type === 'screen' || o.type === 'emfield' || o.type === 'graph') {
+        o.x = this.drag.ox + dx; o.y = this.drag.oy + dy;
+      } else if (o.type === 'helppoint' || o.type === 'formulasource') {
+        o.x = this.drag.ox + dx; o.y = this.drag.oy + dy;
+      } else if (o.type === 'helpline') {
+        o.ax += dx; o.ay += dy; o.bx += dx; o.by += dy;
+        this.drag.wx = w.x; this.drag.wy = w.y;
+      } else if (o.type === 'interpsource') {
+        o.ax += dx; o.ay += dy; o.bx += dx; o.by += dy;
+        this.drag.wx = w.x; this.drag.wy = w.y;
       }
       this.onRefresh(); return;
     }
@@ -196,13 +265,20 @@ export class Tools {
       d._preview = sw; // 预览下一段
     } else if (d.type === 'arcground' && d.dragging) {
       d.r = V.dist({ x: d.cx, y: d.cy }, sw);
-    } else if (d.type === 'emfield' || d.type === 'graph') {
+    } else if (d.type === 'pipe' && d.dragging) {
+      d.r = V.dist({ x: d.cx, y: d.cy }, sw);
+    } else if (d.type === 'screen' || d.type === 'emfield' || d.type === 'graph') {
       d.x = Math.min(d._sx, sw.x); d.y = Math.min(d._sy, sw.y);
       d.w = Math.abs(sw.x - d._sx); d.h = Math.abs(sw.y - d._sy);
     } else if (d.type === 'spring' || d.type === 'rope') {
       d.b = sw;
-    } else if (d.type === 'source' && !d._setAngle) {
+    } else if (d.type === 'helpline' || d.type === 'interpsource') {
+      d.bx = sw.x; d.by = sw.y;
+    } else if ((d.type === 'source' || d.type === 'formulasource') && !d._setAngle) {
       d.angle = Math.atan2(sw.y - d.y, sw.x - d.x);
+    } else if (d.type === 'interpsource' && !d._setAngle) {
+      const cx = (d.ax + d.bx) / 2; const cy = (d.ay + d.by) / 2;
+      d.angle = Math.atan2(sw.y - cy, sw.x - cx);
     }
     this._syncPreview();
     this.onRefresh();
@@ -246,6 +322,14 @@ export class Tools {
     if (t === 'ground' || t === 'conveyor') this._finishPoly();
     else if (t === 'arcground') this._finishArc();
     else if (t === 'spring' || t === 'rope') this._finishSpring();
+    else if (t === 'pipe') this._finishPipe();
+    else if (t === 'helpline') this._finishHelpLine();
+    else if (t === 'interpsource') this._finishInterpSource();
+    else if (t === 'formulasource') this._finishFormulaSource();
+    else if (t === 'screen' || t === 'graph' || t === 'emfield') {
+      if (this.drawing.w > 0.4 && this.drawing.h > 0.4) this._finishRect();
+      else this.drawing = null;
+    }
     else this.drawing = null;
     this.onRefresh();
   }
@@ -292,5 +376,33 @@ export class Tools {
     const o = make('source', { x: d.x, y: d.y, angle: d.angle });
     this.world.add(o); this.drawing = null; this.r.preview = null;
     this.onSelect(o); this.onCommit(); this.onToast('已添加粒子源');
+  }
+  _finishPipe() {
+    const d = this.drawing;
+    if (!d || d.r < 0.3) { this.drawing = null; this.r.preview = null; return; }
+    const o = make('pipe', { cx: d.cx, cy: d.cy, r: d.r, innerR: d.r * 0.8 });
+    this.world.add(o); this.drawing = null; this.r.preview = null;
+    this.onSelect(o); this.onCommit(); this.onToast('已添加圆管');
+  }
+  _finishHelpLine() {
+    const d = this.drawing;
+    if (!d) return;
+    const o = make('helpline', { ax: d.ax, ay: d.ay, bx: d.bx, by: d.by });
+    this.world.add(o); this.drawing = null; this.r.preview = null;
+    this.onSelect(o); this.onCommit(); this.onToast('已添加辅助线');
+  }
+  _finishInterpSource() {
+    const d = this.drawing;
+    if (!d) return;
+    const o = make('interpsource', { ax: d.ax, ay: d.ay, bx: d.bx, by: d.by, angle: d.angle });
+    this.world.add(o); this.drawing = null; this.r.preview = null;
+    this.onSelect(o); this.onCommit(); this.onToast('已添加插值粒子源');
+  }
+  _finishFormulaSource() {
+    const d = this.drawing;
+    if (!d) return;
+    const o = make('formulasource', { x: d.x, y: d.y, angle: d.angle });
+    this.world.add(o); this.drawing = null; this.r.preview = null;
+    this.onSelect(o); this.onCommit(); this.onToast('已添加公式粒子源（可在右侧编辑公式）');
   }
 }

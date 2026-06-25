@@ -184,10 +184,21 @@ function showHint(t) {
     conveyor: '依次点击添加顶点，双击或回车完成',
     spring: '点击两端：可吸附质点或自由锚点',
     rope: '先点击锚点，再点击悬挂的质点',
-    emfield: '拖拽绘制矩形电磁场区域',
+    emfield: '拖拽绘制矩形电磁场区域（恒定场）',
     source: '点击放置，再点击设定发射方向',
     text: '点击添加文本（可在右侧编辑动态表达式）',
     graph: '拖拽绘制函数图像区域，选择跟踪量',
+    // V2 新增
+    efield: '拖拽绘制电场区域（恒定电场 E）',
+    bfield: '拖拽绘制磁场区域（恒定磁场 B）',
+    acefield: '拖拽绘制交变电场区域',
+    acbfield: '拖拽绘制交变磁场区域',
+    pipe: '点击圆心，拖动设定半径',
+    screen: '拖拽绘制荧光屏检测区',
+    helppoint: '点击放置辅助标注点',
+    helpline: '点击两端绘制辅助线',
+    interpsource: '点击两端设定插值范围，再点击设发射角度',
+    formulasource: '点击放置，再点击设定发射方向（可用公式定义速度）',
   };
   const h = $('#hint'); h.textContent = hints[t] || ''; h.classList.add('show');
   clearTimeout(showHint._t); showHint._t = setTimeout(() => h.classList.remove('show'), 2600);
@@ -270,7 +281,17 @@ window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
   const k = e.key.toLowerCase();
   // 工具快捷键（R 保留给重置，摆线改用 O）
-  const map = { v: 'select', h: 'pan', p: 'particle', g: 'ground', a: 'arcground', c: 'conveyor', s: 'spring', o: 'rope', e: 'emfield', n: 'source', t: 'text', f: 'graph' };
+  const map = { v: 'select', h: 'pan', p: 'particle', g: 'ground', a: 'arcground', c: 'conveyor', s: 'spring', o: 'rope', e: 'emfield', n: 'source', t: 'text', f: 'graph',
+    // V2 新增快捷键
+    I: 'interpsource', // 插值粒子源
+    D: 'formulasource', // 公式粒子源
+    k: 'pipe', // 圆管
+    X: 'screen', // 荧光屏
+    P: 'helppoint', // 辅助点
+    U: 'helpline', // 辅助线
+    E: 'efield', // 电场
+    B: 'bfield', // 磁场
+  };
   if (map[k]) { const btn = document.querySelector(`.tool[data-tool="${map[k]}"]`); if (btn) btn.click(); }
   if (k === ' ') { e.preventDefault(); $('#sim-play').click(); }
   if (k === '.') { e.preventDefault(); $('#sim-step').click(); }

@@ -93,6 +93,65 @@ export function make(type, opts = {}) {
         quantity: opts.quantity || 'v', targetId: opts.targetId ?? null,
         axisT: opts.axisT ?? 5, data: [],
       });
+    // ===== V2 新增对象类型 =====
+    case 'pipe':
+      // 圆管：圆形管道，粒子可从内部穿过，碰撞时法向指向圆心
+      return Object.assign(base, {
+        name: opts.name || '圆管', color: opts.color || '#64748b',
+        cx: opts.cx ?? 0, cy: opts.cy ?? 0, r: opts.r ?? 1.5,
+        a0: opts.a0 ?? 0, a1: opts.a1 ?? Math.PI * 2, // 圆管起止角（默认整圆）
+        innerR: opts.innerR ?? 1.2, // 内半径（管壁厚度）
+        friction: opts.friction ?? 0.2, restitution: opts.restitution ?? 0.5,
+        thickness: 0.10, _seg: 32,
+      });
+    case 'screen':
+      // 荧光屏：检测粒子穿过位置并显示亮点
+      return Object.assign(base, {
+        name: opts.name || '荧光屏', color: opts.color || '#22c55e',
+        x: opts.x ?? 3, y: opts.y ?? -2, w: opts.w ?? 0.15, h: opts.h ?? 4,
+        hits: [], // 粒子击中记录 [{x,y,t,color,radius},...]
+        maxHits: 200,
+        fadeTime: 3, // 淡出时间(秒)
+      });
+    case 'helppoint':
+      // 辅助点：标注用点，不参与物理计算
+      return Object.assign(base, {
+        name: opts.name || '辅助点', color: opts.color || '#f59e0b',
+        x: opts.x ?? 0, y: opts.y ?? 0,
+        radius: opts.radius ?? 0.12,
+        text: opts.text || '', size: opts.size ?? 11,
+        shape: opts.shape || 'circle', // circle / cross / diamond
+      });
+    case 'helpline':
+      // 辅助线：标注用线段，不参与物理计算
+      return Object.assign(base, {
+        name: opts.name || '辅助线', color: opts.color || '#f59e0b',
+        ax: opts.ax ?? 0, ay: opts.ay ?? 0, bx: opts.bx ?? 1, by: opts.by ?? 0,
+        text: opts.text || '', size: opts.size ?? 11,
+        style: opts.style || 'solid', // solid / dashed / dotted
+        arrow: !!opts.arrow, // 是否带箭头
+      });
+    case 'interpsource':
+      // 插值粒子源：在两个端点之间插值发射粒子
+      return Object.assign(base, {
+        name: opts.name || '插值粒子源', color: opts.color || '#f97316',
+        ax: opts.ax ?? -3, ay: opts.ay ?? 0, bx: opts.bx ?? -3, by: opts.by ?? 0,
+        angle: opts.angle ?? 0, speed: opts.speed ?? 3, rate: opts.rate ?? 4,
+        count: opts.count ?? 5, // 插值发射数量
+        charge: opts.charge ?? 0, mass: opts.mass ?? 1, radius: opts.radius ?? 0.25,
+        on: opts.on !== false, _acc: 0, _idx: 0,
+      });
+    case 'formulasource':
+      // 公式粒子源：用公式定义粒子的初速度/位置
+      return Object.assign(base, {
+        name: opts.name || '公式粒子源', color: opts.color || '#ec4899',
+        x: opts.x ?? -3, y: opts.y ?? 0,
+        vxExpr: opts.vxExpr || '3*cos(t*2)', // 速度x公式（t为时间）
+        vyExpr: opts.vyExpr || '3*sin(t*2)', // 速度y公式
+        rate: opts.rate ?? 2, charge: opts.charge ?? 0,
+        mass: opts.mass ?? 1, radius: opts.radius ?? 0.25,
+        on: opts.on !== false, _acc: 0, _t: 0,
+      });
     default: return base;
   }
 }
@@ -362,10 +421,82 @@ export class World {
         }
       }
     }
+
+    // 9) 圆管碰撞（粒子-管壁碰撞，法向指向/背离圆心）
+    for (const p of parts) {
+      if (p.fixed) continue;
+      for (const pipe of this.objects.filter(o => o.type === 'pipe')) {
+        const dx = p.x - pipe.cx, dy = p.y - pipe.cy;
+        const dist = Math.hypot(dx, dy);
+        // 粒子在管外且接近外壁
+        if (dist > pipe.r - p.radius && dist < pipe.r + p.radius) {
+          const nx = dx / dist || 1, ny = dy / dist; // 法向指向圆心（向内为正）
+          const pen = (pipe.r - dist) + p.radius;
+          if (pen > 0) {
+            p.x += nx * pen; p.y += ny * pen;
+            const vn = -(p.vx * nx + p.vy * ny); // 向外的速度分量
+            if (vn > 0) { // 正在向外运动
+              const e = (pipe.restitution ?? 0.5) * this.restitutionGlobal;
+              const vnNew = -e * vn;
+              // 切向摩擦
+              const tx = -ny, ty = nx;
+              let vt = p.vx * tx + p.vy * ty;
+              const mu = pipe.friction ?? 0.2;
+              const fric = clamp(vt * mu, -Math.abs(vt), Math.abs(vt));
+              vt -= fric * 0.5;
+              // 重组速度
+              p.vx = vt * tx - vnNew * nx;
+              p.vy = vt * ty - vnNew * ny;
+            }
+          }
+        }
+        // 粒子在管内且接近内壁
+        if (dist < pipe.innerR + p.radius && dist > pipe.innerR - p.radius && dist > 1e-6) {
+          const nx = dx / dist, ny = dy / dist; // 法向向外
+          const pen = (dist - pipe.innerR) + p.radius;
+          if (pen > 0) {
+            p.x -= nx * pen; p.y -= ny * pen;
+            const vn = p.vx * nx + p.vy * ny; // 向内的速度分量
+            if (vn > 0) { // 正在向内运动
+              const e = (pipe.restitution ?? 0.5) * this.restitutionGlobal;
+              const vnNew = -e * vn;
+              const tx = -ny, ty = nx;
+              let vt = p.vx * tx + p.vy * ty;
+              const mu = pipe.friction ?? 0.2;
+              const fric = clamp(vt * mu, -Math.abs(vt), Math.abs(vt));
+              vt -= fric * 0.5;
+              p.vx = vt * tx + vnNew * nx;
+              p.vy = vt * ty + vnNew * ny;
+            }
+          }
+        }
+      }
+    }
+
+    // 10) 荧光屏检测：记录粒子穿过屏幕的位置
+    for (const scr of this.objects.filter(o => o.type === 'screen')) {
+      if (!scr.visible) continue;
+      for (const p of parts) {
+        // 检查粒子是否在屏幕矩形区域内
+        if (p.x >= scr.x && p.x <= scr.x + scr.w &&
+            p.y >= scr.y && p.y <= scr.y + scr.h) {
+          // 记录击中点（避免重复记录同一位置）
+          const lastHit = scr.hits[scr.hits.length - 1];
+          if (!lastHit ||
+              Math.abs(p.x - lastHit.x) > 0.05 ||
+              Math.abs(p.y - lastHit.y) > 0.05 ||
+              (this.time - lastHit.t) > 0.02) {
+            scr.hits.push({ x: p.x, y: p.y, t: this.time, color: p.color, radius: p.radius });
+            if (scr.hits.length > scr.maxHits) scr.hits.shift();
+          }
+        }
+      }
+    }
   }
 
   // 粒子源发射
   emitSources(dt) {
+    // 普通粒子源
     for (const s of this.objects.filter(o => o.type === 'source' && o.on)) {
       s._acc += dt * s.rate;
       while (s._acc >= 1) {
@@ -376,6 +507,46 @@ export class World {
           vy: Math.sin(s.angle) * s.speed,
           mass: s.mass, charge: s.charge, radius: s.radius,
           color: s.color, name: '发射粒子',
+        });
+        this.sourceParticles.push(p);
+        if (this.sourceParticles.length > 200) this.sourceParticles.shift();
+      }
+    }
+    // 插值粒子源：在两个端点之间均匀发射
+    for (const s of this.objects.filter(o => o.type === 'interpsource' && o.on)) {
+      s._acc += dt * s.rate;
+      while (s._acc >= 1) {
+        s._acc -= 1;
+        const idx = s._idx % (s.count || 1);
+        s._idx++;
+        const fx = s.ax + (s.bx - s.ax) * (idx / Math.max(1, s.count - 1));
+        const fy = s.ay + (s.by - s.ay) * (idx / Math.max(1, s.count - 1));
+        const p = make('particle', {
+          x: fx, y: fy,
+          vx: Math.cos(s.angle) * s.speed,
+          vy: Math.sin(s.angle) * s.speed,
+          mass: s.mass, charge: s.charge, radius: s.radius,
+          color: s.color, name: '插值发射',
+        });
+        this.sourceParticles.push(p);
+        if (this.sourceParticles.length > 300) this.sourceParticles.shift();
+      }
+    }
+    // 公式粒子源：用公式定义初速度
+    for (const s of this.objects.filter(o => o.type === 'formulasource' && o.on)) {
+      s._acc += dt * s.rate;
+      while (s._acc >= 1) {
+        s._acc -= 1;
+        s._t += 1 / s.rate; // 累加时间用于公式计算
+        const scope = { t: s._t, pi: Math.PI };
+        const vx = evalExpr(s.vxExpr, scope) || s.speed;
+        const vy = evalExpr(s.vyExpr, scope) || 0;
+        const p = make('particle', {
+          x: s.x, y: s.y,
+          vx: isFinite(vx) ? vx : s.speed,
+          vy: isFinite(vy) ? vy : 0,
+          mass: s.mass, charge: s.charge, radius: s.radius,
+          color: s.color, name: '公式发射',
         });
         this.sourceParticles.push(p);
         if (this.sourceParticles.length > 200) this.sourceParticles.shift();

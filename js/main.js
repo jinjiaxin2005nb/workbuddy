@@ -252,11 +252,11 @@ $('#prop-duplicate').addEventListener('click', () => {
   world.add(c); select(c); props.refreshTargetList(); saveSnapshot(); toast('已复制');
 });
 
-// 顶部操作
 $('#btn-new').addEventListener('click', () => {
   if (world.objects.length && !confirm('清空当前画布？')) return;
   world.clear(); world.sourceParticles = []; select(null); snapshot = null; updateSimStats(); toast('已新建');
 });
+$('#btn-demo').addEventListener('click', () => openDemoList());
 $('#btn-save').addEventListener('click', () => {
   const name = prompt('方案名称：', '我的方案 ' + new Date().toLocaleString('zh-CN'));
   if (!name) return;
@@ -520,6 +520,135 @@ function getVal(p, q) {
   return 0;
 }
 
+// ========== 演示场景库 ==========
+const DEMO_SCENES = {
+  '自由落体': () => {
+    world.clear();
+    world.add(make('ground', { points: [{x:-9,y:-4},{x:9,y:-4}], friction:0.2, restitution:0.6 }));
+    world.add(make('particle', { x:0, y:5, vx:0, vy:0, mass:1, radius:0.35, color:'#3b82f6', name:'落体A' }));
+    world.add(make('particle', { x:-1.5, y:5, vx:0, vy:0, mass:0.8, radius:0.3, color:'#ef4444', name:'落体B' }));
+    world.add(make('text', { x:-8, y:4.5, text:'自由落体（比较质量)', size:14, color:'#1f2937' }));
+  },
+  '平抛运动': () => {
+    world.clear();
+    world.add(make('ground', { points: [{x:-9,y:-3},{x:9,y:-3}], friction:0.2, restitution:0.5 }));
+    world.add(make('particle', { x:-6, y:4, vx:4, vy:0, mass:1, radius:0.35, color:'#3b82f6', name:'平抛质点' }));
+    world.add(make('text', { x:-8, y:4.5, text:'平抛：初速 vx=4', size:13, color:'#1f2937' }));
+    world.add(make('graph', { x:5, y:1, w:3.5, h:2.5, quantity:'vy', axisT:4 }));
+  },
+  '斜面运动': () => {
+    world.clear();
+    world.add(make('ground', { points: [{x:-9,y:-4},{x:9,y:-4}], friction:0.3, restitution:0.5 }));
+    world.add(make('ground', { points: [{x:-9,y:-1},{x:-3,y:-4}], friction:0.3, restitution:0.4, color:'#64748b' }));
+    world.add(make('particle', { x:-7, y:0.5, vx:2, vy:0, mass:1, radius:0.35, color:'#3b82f6', name:'斜面质点' }));
+    world.add(make('text', { x:-8, y:4.5, text:'斜面运动（摩擦μ=0.3）', size:13, color:'#1f2937' }));
+  },
+  '弹簧振子': () => {
+    world.clear();
+    world.add(make('particle', { x:0, y:5, fixed:true, radius:0.2, color:'#64748b', name:'悬挂点' }));
+    const bob = make('particle', { x:0, y:2, mass:1, radius:0.35, color:'#ef4444', name:'振子' });
+    world.add(bob);
+    world.add(make('spring', { aId: world.objects[0].id, bId:bob.id, k:20, damping:0.3, L0:1.5, coils:10 }));
+  },
+  '单摆': () => {
+    world.clear();
+    world.add(make('particle', { x:0, y:5, fixed:true, radius:0.2, color:'#64748b', name:'悬挂点' }));
+    const bob = make('particle', { x:1.5, y:3.5, mass:1, radius:0.35, color:'#10b981', name:'摆球' });
+    world.add(bob);
+    world.add(make('rope', { aId:world.objects[0].id, length:2, damping:0.05 }));
+  },
+  '传送带模型': () => {
+    world.clear();
+    world.add(make('ground', { points: [{x:-9,y:-4},{x:9,y:-4}], friction:0.3, restitution:0.5 }));
+    world.add(make('conveyor', { points:[{x:-4,y:-2},{x:4,y:-2}], velocity:2.5, friction:0.4 }));
+    world.add(make('particle', { x:-3, y:0, vx:0, vy:0, mass:1, radius:0.35, color:'#3b82f6', name:'传送带试件' }));
+    world.add(make('text', { x:-8, y:4.5, text:'传送带模型（v=2.5m/s）', size:13, color:'#0ea5e9' }));
+  },
+  '牛顿摆': () => {
+    world.clear();
+    const count = 5, spacing = 0.8, topY = 5;
+    for (let i=0; i<count; i++) {
+      const anchor = make('particle', { x:-((count-1)/2*spacing)+i*spacing, y:topY, fixed:true, radius:0.15, color:'#64748b' });
+      world.add(anchor);
+      const bob = make('particle', { x:anchor.x, y:topY-1.8, mass:1, radius:0.3, color:['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6'][i], name:'球'+i });
+      world.add(bob);
+      world.add(make('rope', { aId:anchor.id, length:1.8, damping:0.02 }));
+    }
+    // 拉起第一个球
+    const balls = world.particles;
+    if (balls.length) { balls[0].x -= 0.6; }
+  },
+  '带电粒子在电场中': () => {
+    world.clear();
+    world.gravity = {x:0, y:0}; // 失重
+    world.add(make('emfield', { x:-5, y:-3, w:10, h:6, Ex:5, Ey:0, colorE:'#ef4444', colorB:'#3b82f6' }));
+    world.add(make('particle', { x:-4, y:0, vx:0, vy:2, mass:1, charge:1, radius:0.25, color:'#ef4444', name:'正电荷' }));
+    world.add(make('particle', { x:4, y:0, vx:0, vy:-2, mass:1, charge:-1, radius:0.25, color:'#3b82f6', name:'负电荷' }));
+    world.add(make('text', { x:-8, y:4.5, text:'匀强电场 E=5 V/m →', size:13, color:'#ef4444' }));
+  },
+  '带电粒子在磁场中': () => {
+    world.clear();
+    world.gravity = {x:0, y:0};
+    world.add(make('emfield', { x:-5, y:-3, w:10, h:6, Ex:0, Ey:0, B:2, colorB:'#3b82f6' }));
+    world.add(make('source', { x:-4, y:0, angle:Math.PI/2, speed:3, rate:2, charge:1, mass:1, radius:0.25, on:true }));
+    world.add(make('text', { x:-8, y:4.5, text:'匀强磁场 B=2T ⊗（洛伦兹力）', size:13, color:'#3b82f6' }));
+  },
+  '曲线运动合成': () => {
+    world.clear();
+    world.add(make('ground', { points:[{x:-9,y:-4},{x:9,y:-4}], friction:0.2, restitution:0.5 }));
+    // 两个质点从不同角度发射
+    for (let i=0; i<8; i++) {
+      const angle = -Math.PI/4 + (Math.PI*0.6/7)*i;
+      world.add(make('particle', { x:-5, y:3, vx:Math.cos(angle)*5, vy:Math.sin(angle)*5, mass:1, radius:0.2, color:`hsl(${i*45},70%,50%)`, name:'轨迹'+i }));
+    }
+    world.add(make('text', { x:-8, y:4.5, text:'曲线运动合成（不同初速方向）', size:13, color:'#1f2937' }));
+  },
+};
+
+function loadDemo(name) {
+  const fn = DEMO_SCENES[name]; if (!fn) return;
+  fn();
+  // 重置仿真状态
+  running = false; snapshot = null;
+  document.getElementById('play-icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+  document.getElementById('play-label').textContent = '仿真';
+  world.time = 0; world.steps = 0;
+  world.sourceParticles = [];
+  world.particles.forEach(p => { p.trail = []; });
+  // 刷新UI
+  props.refreshTargetList();
+  props.setSelected(null);
+  toast('已加载场景：' + name);
+}
+
+// 绑定场景列表到弹窗
+function openDemoList() {
+  const names = Object.keys(DEMO_SCENES);
+  const box = document.createElement('div');
+  box.innerHTML = '<div style="font-weight:700;margin-bottom:10px;color:var(--brand-d)">选择演示场景</div>';
+  names.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'sim-btn';
+    btn.style.cssText = 'width:100%;margin-bottom:6px;justify-content:flex-start;';
+    btn.textContent = '▶ ' + n;
+    btn.addEventListener('click', () => { loadDemo(n); $('#modal-demo').hidden = true; });
+    box.appendChild(btn);
+  });
+  // 创建弹窗
+  let m = document.getElementById('modal-demo');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'modal-demo'; m.className = 'modal-mask';
+    const inner = document.createElement('div'); inner.className = 'modal';
+    inner.innerHTML = '<div class="modal-head"><h3>演示场景库</h3><button class="modal-x" data-close>×</button></div><div class="modal-body" id="demo-body"></div>';
+    m.appendChild(inner);
+    document.getElementById('app').appendChild(m);
+    $$('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('.modal-mask').hidden = true));
+  }
+  document.getElementById('demo-body').innerHTML = '';
+  document.getElementById('demo-body').appendChild(box);
+  m.hidden = false;
+}
 // ========== 初始演示场景 ==========
 function demoScene() {
   if (world.objects.length) return;

@@ -503,10 +503,12 @@ World.prototype.substep = function(h, mode) {
         for (let i = 0; i < pts.length - 1; i++) {
           const a = pts[i], b = pts[i + 1];
           const c = circleSeg(p, p.radius, a, b);
-        if (c.hit) {
-          anyHit = true;
-          // 推出（沿法线推出）
-          let n = c.normal;
+          if (c.hit) {
+            anyHit = true;
+            // 推出（沿法线推出）
+            let n = c.normal;
+            // 调试：输出碰撞信息
+            // console.log('HIT', p.name, 'n:', n, 'v:', p.vx, p.vy, 'vn:', p.vx * n.x + p.vy * n.y);
           // 强制法线 y 分量 > 0（指向质点上方，即地面上方）
           if (n.y < 0) { n = { x: -n.x, y: -n.y }; }
           const push = Math.max(c.penetration, 0.0001);

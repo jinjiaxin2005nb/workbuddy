@@ -46,9 +46,10 @@ export function pointSeg(p, a, b) {
 export function circleSeg(c, r, a, b) {
   const res = pointSeg(c, a, b);
   if (res.dist <= r) {
-    let n = V.norm(V.sub(res.point, c));
+    // 法线：从碰撞点指向圆心（即质点所在方向）
+    let n = V.norm(V.sub(c, res.point));
     if (res.dist < 1e-6) n = V.norm(V.perp(V.sub(b, a)));
-    const pen = r - res.dist;
+    const pen = Math.min(r - res.dist, r * 0.5);
     return { hit: true, point: res.point, normal: n, penetration: pen, t: res.t };
   }
   return { hit: false };
@@ -83,9 +84,12 @@ export function evalExpr(expr, scope = {}) {
 
 // 圆弧地面采样为折线
 export function arcPoints(g) {
+  let a0 = g.a0, a1 = g.a1;
+  // 确保圆弧方向是逆时针（质点站在圆弧上面）
+  if (a1 <= a0) a1 += 2 * Math.PI;
   const pts = [];
   for (let i = 0; i <= (g._seg || 24); i++) {
-    const a = g.a0 + (g.a1 - g.a0) * (i / (g._seg || 24));
+    const a = a0 + (a1 - a0) * (i / (g._seg || 24));
     pts.push({ x: g.cx + g.r * Math.cos(a), y: g.cy + g.r * Math.sin(a) });
   }
   return pts;

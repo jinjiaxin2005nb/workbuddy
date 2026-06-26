@@ -183,4 +183,30 @@ input,select{font-family:inherit;font-size:13px}
 ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:5px}
 ::-webkit-scrollbar-thumb:hover{background:#94a3b8}
 ::-webkit-scrollbar-track{background:background}
+/* 下拉菜单（场分割线 / 填充场） */
+.tool-dropdown{position:relative;display:flex;flex-direction:column;gap:3px}
+.tool-dd-trigger{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:7px 2px;border-radius:8px;color:var(--ink);transition:.12s;width:100%;
+}
+.tool-dd-trigger svg:first-child{width:22px;height:22px;fill:currentColor}
+.tool-dd-trigger:hover{background:var(--brand-l);color:var(--brand-d)}
+.tool-dd-trigger.active{background:var(--brand);color:#fff}
+.dd-arrow{width:8px;height:4px;fill:currentColor;opacity:.5;margin-top:-1px}
+.dd-menu{
+  display:none;flex-direction:column;gap:2px;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px;position:absolute;left:82px;top:0;z-index:99;
+  min-width:110px;
+}
+.tool-dropdown.open .dd-menu{display:flex}
+.dd-item{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;
+  font-size:11.5px;color:var(--ink);transition:.1s;width:100%;text-align:left;
+}
+.dd-item svg{width:18px;height:18px;flex-shrink:0}
+.dd-item:hover{background:var(--brand-l);color:var(--brand-d)}
+.dd-item.active{background:var(--brand);color:#fff}
+.dd-item span{white-space:nowrap}
+
 .modal-mask[hidden]{display:none!important}

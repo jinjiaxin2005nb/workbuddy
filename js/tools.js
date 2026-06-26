@@ -1,22 +1,25 @@
 // ===== 工具交互：绘制 / 选择 / 拖动 / 平移 =====
 import { V, clamp, uid, pointSeg, arcPoints } from './util.js';
-import { make } from './world.js';
+import { make, pointInPolygon, getSplitSegments } from './world.js';
 
-const SNAP = 0.3; // 吸附阈值(米)
+const SNAP = 0.3;
 
 export class Tools {
   constructor(canvas, camera, world, renderer) {
     this.cv = canvas; this.cam = camera; this.world = world; this.r = renderer;
     this.tool = 'select';
-    this.drawing = null;      // 正在绘制的临时状态
-    this.drag = null;         // 拖动状态
+    this.drawing = null;
+    this.drag = null;
     this.pan = null;
     this.boxSel = null;
+    this._splitLineType = 'line';
+    this._fillFieldType = 'efield';
     this.onSelect = () => {};
     this.onCommit = () => {};
     this.onToast = () => {};
     this.onRefresh = () => {};
     this.onDirty = () => {};
+    this.onChooseField = null;
     this._bind();
   }
 
@@ -44,12 +47,10 @@ export class Tools {
   }
   _world(e) { const { sx, sy } = this._pos(e); return this.cam.w(sx, sy); }
 
-  // 吸附：网格 + 粒子中心
   _snap(w) {
     const g = this.cam.gridStep();
     let x = Math.round(w.x / g) * g;
     let y = Math.round(w.y / g) * g;
-    // 粒子吸附
     for (const p of this.world.particles) {
       if (V.dist(w, p) < SNAP) { x = p.x; y = p.y; break; }
     }
@@ -57,7 +58,6 @@ export class Tools {
   }
 
   hitTest(w) {
-    // 质点优先
     for (const p of [...this.world.particles].reverse()) {
       if (V.dist(w, p) <= p.radius + 0.15) return p;
     }
@@ -73,9 +73,10 @@ export class Tools {
         const b = o.bId ? this.world.get(o.bId) : (o.b || (o.anchor ? null : null));
         const bb = o.type === 'spring' ? (o.bId ? this.world.get(o.bId) : o.b) : (o.aId ? this.world.get(o.aId) : null);
         if (o.type === 'spring') {
-          if (pointSeg(w, a, bb).dist <= 0.25) return o;
+          if (a && b && pointSeg(w, a, b).dist <= 0.25) return o;
         } else {
-          if (pointSeg(w, o.anchor, A || { x: 0, y: 0 }).dist <= 0.25) return o;
+          const anch = o.anchor || a;
+          if (A && pointSeg(w, anch, A).dist <= 0.25) return o;
         }
       } else if (o.type === 'emfield' || o.type === 'graph') {
         if (w.x >= o.x && w.x <= o.x + o.w && w.y >= o.y && w.y <= o.y + o.h) return o;
@@ -85,9 +86,16 @@ export class Tools {
         const d = V.dist(w, { x: o.cx, y: o.cy });
         if (d <= o.r + 0.15 && d >= (o.innerR || 0) - 0.15) return o;
       } else if (o.type === 'screen') {
-        if (w.x >= o.x && w.x <= o.x + o.w && w.y >= O.y && w.y <= o.y + o.h) return o;
+        if (w.x >= o.x && w.x <= o.x + o.w && w.y >= o.y && w.y <= o.y + o.h) return o;
       } else if (o.type === 'helpline' || o.type === 'interpsource') {
         if (pointSeg(w, { x: o.ax, y: o.ay }, { x: o.bx, y: o.by }).dist <= 0.2) return o;
+      } else if (o.type === 'splitLine') {
+        const segs = getSplitSegments(o);
+        for (const s of segs) {
+          if (pointSeg(w, s.p1, s.p2).dist <= 0.2) return o;
+        }
+      } else if (o.type === 'fieldPoly') {
+        if (o.polygon && o.polygon.length >= 3 && pointInPolygon(w, o.polygon)) return o;
       }
     }
     return null;
@@ -109,7 +117,6 @@ export class Tools {
       return;
     }
 
-    // 绘制工具
     switch (this.tool) {
       case 'particle': {
         const p = make('particle', { x: sw.x, y: sw.y });
@@ -130,18 +137,15 @@ export class Tools {
       }
       case 'spring': case 'rope': {
         if (!this.drawing) {
-          // 第一端点：吸附粒子或自由锚点
           const hit = this.hitTest(w);
           if (hit && hit.type === 'particle') this.drawing = { type: this.tool, aId: hit.id, a: { x: hit.x, y: hit.y }, b: sw };
           else this.drawing = { type: this.tool, a: sw, b: sw };
         } else {
           const hit = this.hitTest(w);
           if (this.drawing.type === 'rope') {
-            // 摆线：第二次点击设置悬挂质点（aId）
             if (hit && hit.type === 'particle') this.drawing.aId = hit.id;
             this.drawing.b = sw;
           } else {
-            // 弹簧：第二次点击设置B端
             if (hit && hit.type === 'particle') this.drawing.bId = hit.id;
             this.drawing.b = sw;
           }
@@ -164,9 +168,36 @@ export class Tools {
       }
       case 'text': {
         const t = make('text', { x: sw.x, y: sw.y, text: '文本' });
-        this.world.add(t); this.onSelect(t); this.onCommit(); this.onToast('已添加文本，可在右侧编辑'); break;
+        this.world.add(t); this.onSelect(t); this.onCommit(); this.onToast('已添加文本'); break;
       }
-      // ===== V2 新增工具 =====
+      case 'splitline': {
+        const splitType = this._splitLineType || 'line';
+        if (!this.drawing) {
+          if (splitType === 'line') {
+            this.drawing = { type: 'splitLine', shape: 'line', x1: sw.x, y1: sw.y, x2: sw.x, y2: sw.y };
+          } else if (splitType === 'circle') {
+            this.drawing = { type: 'splitLine', shape: 'circle', cx: sw.x, cy: sw.y, r: 0, dragging: true };
+          } else if (splitType === 'rect') {
+            this.drawing = { type: 'splitLine', shape: 'rect', rx: sw.x, ry: sw.y, rw: 0, rh: 0, _sx: sw.x, _sy: sw.y };
+          }
+        } else {
+          if (splitType === 'line') {
+            this.drawing.x2 = sw.x; this.drawing.y2 = sw.y;
+            this._finishSplitLine();
+          } else if (splitType === 'circle') {
+            this.drawing.dragging = false; this._finishSplitLine();
+          } else if (splitType === 'rect') {
+            this.drawing.rw = sw.x - this.drawing._sx;
+            this.drawing.rh = sw.y - this.drawing._sy;
+            this._finishSplitLine();
+          }
+        }
+        break;
+      }
+      case 'fillfield': {
+        if (this.onChooseField) this.onChooseField(sw);
+        break;
+      }
       case 'helppoint': {
         const t = make('helppoint', { x: sw.x, y: sw.y });
         this.world.add(t); this.onSelect(t); this.onCommit(); this.onToast('已添加辅助点'); break;
@@ -255,6 +286,14 @@ export class Tools {
       } else if (o.type === 'interpsource') {
         o.ax += dx; o.ay += dy; o.bx += dx; o.by += dy;
         this.drag.wx = w.x; this.drag.wy = w.y;
+      } else if (o.type === 'splitLine') {
+        if (o.shape === 'line') {
+          o.x2 = sw.x; o.y2 = sw.y;
+        } else if (o.shape === 'circle') {
+          o.r = V.dist({ x: o.cx, y: o.cy }, sw);
+        } else if (o.shape === 'rect') {
+          o.rw = sw.x - o.rx; o.rh = sw.y - o.ry;
+        }
       }
       this.onRefresh(); return;
     }
@@ -262,7 +301,7 @@ export class Tools {
     if (!this.drawing) return;
     const d = this.drawing;
     if (d.type === 'ground' || d.type === 'conveyor') {
-      d._preview = sw; // 预览下一段
+      d._preview = sw;
     } else if (d.type === 'arcground' && d.dragging) {
       d.r = V.dist({ x: d.cx, y: d.cy }, sw);
     } else if (d.type === 'pipe' && d.dragging) {
@@ -311,7 +350,7 @@ export class Tools {
 
   dblclick(e) {
     if (this.drawing && (this.drawing.type === 'ground' || this.drawing.type === 'conveyor')) {
-      this.drawing.points.pop(); // 去掉双击产生的重复点
+      this.drawing.points.pop();
       this._finishPoly();
     }
   }
@@ -329,6 +368,11 @@ export class Tools {
     else if (t === 'screen' || t === 'graph' || t === 'emfield') {
       if (this.drawing.w > 0.4 && this.drawing.h > 0.4) this._finishRect();
       else this.drawing = null;
+    }
+    else if (t === 'splitline') this._finishSplitLine();
+    else if (t === 'fillfield') {
+      if (this.onChooseField) this.onChooseField(this.drawing ? this.drawing.pt : null);
+      this.drawing = null;
     }
     else this.drawing = null;
     this.onRefresh();
@@ -358,7 +402,7 @@ export class Tools {
     const d = this.drawing;
     const o = make(d.type, { x: d.x, y: d.y, w: d.w, h: d.h });
     this.world.add(o); this.drawing = null; this.r.preview = null;
-    this.onSelect(o); this.onCommit(); this.onToast(`已添加${d.type === 'emfield' ? '电磁场' : '函数图像'}`);
+    this.onSelect(o); this.onCommit(); this.onToast(`已添加${d.type === 'emfield' ? '电磁场' : d.type === 'screen' ? '荧光屏' : '函数图像'}`);
   }
   _finishSpring() {
     const d = this.drawing;
@@ -403,6 +447,31 @@ export class Tools {
     if (!d) return;
     const o = make('formulasource', { x: d.x, y: d.y, angle: d.angle });
     this.world.add(o); this.drawing = null; this.r.preview = null;
-    this.onSelect(o); this.onCommit(); this.onToast('已添加公式粒子源（可在右侧编辑公式）');
+    this.onSelect(o); this.onCommit(); this.onToast('已添加公式粒子源');
+  }
+  _finishSplitLine() {
+    const d = this.drawing;
+    if (!d) { this.drawing = null; this.r.preview = null; return; }
+    if (d.shape === 'line') {
+      if (V.dist({ x: d.x1, y: d.y1 }, { x: d.x2, y: d.y2 }) < 0.15) { this.drawing = null; this.r.preview = null; return; }
+    } else if (d.shape === 'circle') {
+      if ((d.r || 0) < 0.15) { this.drawing = null; this.r.preview = null; return; }
+    } else if (d.shape === 'rect') {
+      if (Math.abs(d.rw) < 0.15 || Math.abs(d.rh) < 0.15) { this.drawing = null; this.r.preview = null; return; }
+    }
+    const rx = d.shape === 'rect' ? Math.min(d.rx, d.rx + d.rw) : 0;
+    const ry = d.shape === 'rect' ? Math.min(d.ry, d.ry + d.rh) : 0;
+    const rw = d.shape === 'rect' ? Math.abs(d.rw) : 0;
+    const rh = d.shape === 'rect' ? Math.abs(d.rh) : 0;
+    const o = make('splitLine', {
+      shape: d.shape,
+      x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2,
+      cx: d.cx, cy: d.cy, r: d.r,
+      rx, ry, rw, rh,
+    });
+    this.world.add(o);
+    if (this.world.rebuildPolygons) this.world.rebuildPolygons();
+    this.drawing = null; this.r.preview = null;
+    this.onSelect(o); this.onCommit(); this.onToast(`已添加场分割线（${d.shape}）`);
   }
 }

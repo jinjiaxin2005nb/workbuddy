@@ -78,6 +78,39 @@ function saveSnapshot() {
     time: 0, steps: 0,
   };
 }
+
+// ========= 填充场回调 =========
+// tools.js 中 fillfield 工具点击时回调
+function onChooseField(pt) {
+  // 先检查点是否在已知多边形内
+  const polys = world.polygons || [];
+  let targetPoly = null, polyIdx = -1;
+  for (let i = 0; i < polys.length; i++) {
+    if (polys[i].pts && pointInPolygon(pt, polys[i].pts)) {
+      targetPoly = polys[i].pts;
+      polyIdx = i;
+      break;
+    }
+  }
+  if (!targetPoly) {
+    toast("请在封闭区域内点击"); return;
+  }
+  // 弹出场类型选择（用 prompt 简化，实际应弹窗）
+  const fieldType = tools._fillFieldType || "efield";
+  const Ex = (fieldType === "efield" || fieldType === "acefield") ? 5 : 0;
+  const B = (fieldType === "bfield" || fieldType === "acbfield") ? 2 : 0;
+  const ac = fieldType === "acefield" || fieldType === "acbfield";
+  const name = {efield:"电场", bfield:"磁场", acefield:"交变电场", acbfield:"交变磁场"}[fieldType] || "场";
+  const fp = make("fieldPoly", {
+    name: name + "场", fieldType, polygon: targetPoly,
+    Ex: Ex, Ey: 0, B: B, ac, freq: 1
+  });
+  world.add(fp);
+  world.rebuildPolygons();
+  select(fp);
+  toast("已填充" + name);
+}
+
 function reset() {
   if (!snapshot) return;
   world.objects = JSON.parse(JSON.stringify(snapshot.objects));
@@ -202,6 +235,59 @@ function showHint(t) {
   };
   const h = $('#hint'); h.textContent = hints[t] || ''; h.classList.add('show');
   clearTimeout(showHint._t); showHint._t = setTimeout(() => h.classList.remove('show'), 2600);
+
+// ========= 下拉菜单（场分割线 / 填充场）=========
+// 下拉触发按钮点击
+$$('.tool-dd-trigger').forEach(btn => {
+  btn.addEventListener('click', e => {
+    const dd = btn.closest('.tool-dropdown');
+    const isOpen = dd.classList.contains('open');
+    $$('.tool-dropdown.open').forEach(d => d.classList.remove('open'));
+    if (!isOpen) {
+      dd.classList.add('open');
+      setTimeout(() => {
+        const close = e2 => {
+          if (!dd.contains(e2.target)) {
+            dd.classList.remove('open');
+            document.removeEventListener('click', close);
+          }
+        };
+        document.addEventListener('click', close);
+      }, 10);
+    }
+    const t = btn.dataset.tool;
+    if (t) {
+      $$('.tool').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tools.setTool(t);
+      showHint(t);
+    }
+  });
+});
+// 下拉菜单项点击
+$$('.dd-item').forEach(item => {
+  item.addEventListener('click', e => {
+    const dd = item.closest('.tool-dropdown');
+    const trigger = dd.querySelector('.tool-dd-trigger');
+    if (dd.id === 'dd-splitline') {
+      const splitType = item.dataset.split;
+      tools._splitLineType = splitType;
+      trigger.querySelector('span').textContent = '场分割线·' + (splitType==='line'?'直线':splitType==='circle'?'圆':'矩形');
+      tools.setTool('splitline');
+      showHint('splitline');
+    } else if (dd.id === 'dd-fillfield') {
+      const fieldType = item.dataset.field;
+      tools._fillFieldType = fieldType;
+      const lbl = {efield:'电场E',bfield:'磁场B',acefield:'交变电场',acbfield:'交变磁场'}[fieldType]||'场';
+      trigger.querySelector('span').textContent = '填充场·' + lbl;
+      tools.setTool('fillfield');
+      showHint('fillfield');
+    }
+    dd.classList.remove('open');
+    e.stopPropagation();
+  });
+});
+
 }
 
 // 视图控制
@@ -681,3 +767,4 @@ select(null);
 lastT = performance.now();
 requestAnimationFrame(tick);
 toast('爱物理已就绪 · 按空格开始仿真');
+tools.onChooseField = onChooseField;

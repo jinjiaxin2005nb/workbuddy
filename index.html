@@ -63,19 +63,28 @@
             <span>公式粒子源</span>
           </button>
         </div>
-        <div class="tool-group" data-group="场分划线">
-          <button class="tool" data-tool="ground" title="直线 (L)">
-            <svg viewBox="0 0 24 24"><path d="M3 18L21 6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            <span>直线 (L)</span>
-          </button>
-          <button class="tool" data-tool="arcground" title="圆弧 (A)">
-            <svg viewBox="0 0 24 24"><path d="M3 18a9 9 0 0 1 18 0" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            <span>圆弧 (A)</span>
-          </button>
-          <button class="tool" data-tool="emfield" title="矩形 (R)">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-            <span>矩形 (R)</span>
-          </button>
+        <div class="tool-group" data-group="场分割线">
+          <div class="tool-dropdown" id="dd-splitline">
+            <button class="tool tool-dd-trigger active" data-tool="splitline" title="场分割线">
+              <svg viewBox="0 0 24 24"><path d="M3 18L21 6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              <span>场分割线</span>
+              <svg class="dd-arrow" viewBox="0 0 8 4" width="8" height="4"><path d="M0 0l4 4 4-4" fill="currentColor" opacity="0.5"/></svg>
+            </button>
+            <div class="dd-menu" id="dd-splitline-menu">
+              <button class="dd-item" data-split="line" title="直线分割线 (L)">
+                <svg viewBox="0 0 24 24"><path d="M3 18L21 6" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                <span>直线</span>
+              </button>
+              <button class="dd-item" data-split="circle" title="圆形分割线 (A)">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                <span>圆</span>
+              </button>
+              <button class="dd-item" data-split="rect" title="矩形分割线 (R)">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <span>矩形</span>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="tool-group" data-group="传送带">
           <button class="tool" data-tool="conveyor" title="传送带 (C)">
@@ -104,22 +113,31 @@
           </button>
         </div>
         <div class="tool-group" data-group="填充场">
-          <button class="tool" data-tool="efield" title="电场 (E)">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.08)"/><text x="7" y="15" fill="#ef4444" font-size="12" font-weight="bold">E</text></svg>
-            <span>电场 (E)</span>
-          </button>
-          <button class="tool" data-tool="bfield" title="磁场 (B)">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.08)"/><circle cx="12" cy="12" r="4" stroke="#3b82f6" stroke-width="1.5" fill="none"/><text x="10.5" y="15" fill="#3b82f6" font-size="11" font-weight="bold">B</text></svg>
-            <span>磁场 (B)</span>
-          </button>
-          <button class="tool" data-tool="acefield" title="交变电场">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.06)" stroke-dasharray="5 3"/><text x="7" y="15" fill="#ef4444" font-size="12" font-weight="bold">E~</text><text x="17" y="9" fill="#ef4444" font-size="8">AC</text></svg>
-            <span>交变电场</span>
-          </button>
-          <button class="tool" data-tool="acbfield" title="交变磁场">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.06)" stroke-dasharray="5 3"/><circle cx="12" cy="12" r="4" stroke="#3b82f6" stroke-width="1.5" fill="none"/><text x="10.5" y="15" fill="#3b82f6" font-size="11" font-weight="bold">B~</text><text x="17" y="9" fill="#3b82f6" font-size="8">AC</text></svg>
-            <span>交变磁场</span>
-          </button>
+          <div class="tool-dropdown" id="dd-fillfield">
+            <button class="tool tool-dd-trigger" data-tool="fillfield" title="填充场">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.08)"/><text x="7" y="15" fill="#ef4444" font-size="10" font-weight="bold">E</text></svg>
+              <span>填充场</span>
+              <svg class="dd-arrow" viewBox="0 0 8 4" width="8" height="4"><path d="M0 0l4 4 4-4" fill="currentColor" opacity="0.5"/></svg>
+            </button>
+            <div class="dd-menu" id="dd-fillfield-menu">
+              <button class="dd-item" data-field="efield" title="填充电场">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.10)"/><text x="8" y="16" fill="#ef4444" font-size="11" font-weight="bold">E</text></svg>
+                <span>电场 E</span>
+              </button>
+              <button class="dd-item" data-field="bfield" title="填充磁场">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.10)"/><circle cx="12" cy="12" r="4" stroke="#3b82f6" stroke-width="1.2" fill="none"/><text x="10" y="15" fill="#3b82f6" font-size="9" font-weight="bold">B</text></svg>
+                <span>磁场 B</span>
+              </button>
+              <button class="dd-item" data-field="acefield" title="填充交变电场">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444" stroke-width="1.5" fill="rgba(239,68,68,0.06)" stroke-dasharray="4 3"/><text x="7" y="15" fill="#ef4444" font-size="10" font-weight="bold">E~</text></svg>
+                <span>交变电场</span>
+              </button>
+              <button class="dd-item" data-field="acbfield" title="填充交变磁场">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#3b82f6" stroke-width="1.5" fill="rgba(59,130,246,0.06)" stroke-dasharray="4 3"/><circle cx="12" cy="12" r="4" stroke="#3b82f6" stroke-width="1.2" fill="none"/><text x="8" y="15" fill="#3b82f6" font-size="9" font-weight="bold">B~</text></svg>
+                <span>交变磁场</span>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="tool-group" data-group="检测">
           <button class="tool" data-tool="screen" title="荧光屏">

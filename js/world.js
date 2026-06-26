@@ -506,21 +506,17 @@ World.prototype.substep = function(h, mode) {
           if (c.hit) {
             anyHit = true;
             // 推出（沿法线推出）
-            let n = c.normal;
-            // 调试：输出碰撞信息
-            // console.log('HIT', p.name, 'n:', n, 'v:', p.vx, p.vy, 'vn:', p.vx * n.x + p.vy * n.y);
-          // 强制法线 y 分量 > 0（指向质点上方，即地面上方）
-          if (n.y < 0) { n = { x: -n.x, y: -n.y }; }
-          const push = Math.max(c.penetration, 0.0001);
-          p.x += n.x * push;
-          p.y += n.y * push;
-          // 速度投影：法线方向分量 vn
-          const vn = p.vx * n.x + p.vy * n.y;
-          if (vn < 0) {
-            const e = (s.obj.restitution ?? 0.5) * this.restitutionGlobal;
-            const vnNew = -e * vn;
-            const tx = -n.y, ty = n.x;
-            let vt = p.vx * tx + p.vy * ty;
+            const n = c.normal;
+            const push = Math.max(c.penetration, 0.0001);
+            p.x += n.x * push;
+            p.y += n.y * push;
+            // 速度投影：法线方向分量 vn
+            const vn = p.vx * n.x + p.vy * n.y;
+            if (vn < 0) {
+              const e = (s.obj.restitution ?? 0.5) * this.restitutionGlobal;
+              const vnNew = -e * vn;
+              const tx = -n.y, ty = n.x;
+              let vt = p.vx * tx + p.vy * ty;
               // 摩擦力（减少切向速度）
               if (s.obj.type === 'conveyor') {
                 const dir = Math.sign((b.x - a.x) * tx + (b.y - a.y) * ty);

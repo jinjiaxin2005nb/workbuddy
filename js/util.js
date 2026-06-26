@@ -28,6 +28,7 @@ export const V = {
   ang: a => Math.atan2(a.y, a.x),
   norm: a => { const l = Math.hypot(a.x, a.y) || 1; return { x: a.x / l, y: a.y / l }; },
   rot: (a, ang) => { const c = Math.cos(ang), s = Math.sin(ang); return { x: a.x * c - a.y * s, y: a.x * s + a.y * c }; },
+  neg: a => ({ x: -a.x, y: -a.y }),
   perp: a => ({ x: -a.y, y: a.x }),
 };
 

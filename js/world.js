@@ -510,11 +510,11 @@ World.prototype.substep = function(h, mode) {
             const push = Math.max(c.penetration, 0.0001);
             p.x += n.x * push;
             p.y += n.y * push;
-            // 速度投影：法线方向分量 vn
-            const vn = p.vx * n.x + p.vy * n.y;
-            if (vn < 0) {
+            // 速度投影：法线方向分量 velNormal
+            const velNormal = p.vx * n.x + p.vy * n.y;
+            if (velNormal < 0) {
               const e = (s.obj.restitution ?? 0.5) * this.restitutionGlobal;
-              const vnNew = -e * vn;
+              const vnNew = -e * velNormal;
               const tx = -n.y, ty = n.x;
               let vt = p.vx * tx + p.vy * ty;
               // 摩擦力（减少切向速度）
@@ -523,7 +523,7 @@ World.prototype.substep = function(h, mode) {
                 const target = s.obj.velocity * dir;
                 const mu = s.obj.friction ?? 0.4;
                 const dvt = target - vt;
-                const maxD = Math.abs(vn) * mu * (1 + e) + 0.02;
+                const maxD = Math.abs(velNormal) * mu * (1 + e) + 0.02;
                 const fd = clamp(dvt, -maxD, maxD);
                 vt += fd;
               } else {
@@ -553,10 +553,10 @@ World.prototype.substep = function(h, mode) {
         if (!a.fixed) { a.x -= nx * over; a.y -= ny * over; }
         if (!b.fixed) { b.x += nx * over; b.y += ny * over; }
         const rvx = b.vx - a.vx, rvy = b.vy - a.vy;
-        const vn = rvx * nx + rvy * ny;
-        if (vn < 0) {
+        const velNormal = rvx * nx + rvy * ny;
+        if (velNormal < 0) {
           const e = Math.min(a.restitution, b.restitution) * this.restitutionGlobal;
-          const im = (-(1 + e) * vn) / ((a.fixed ? 0 : 1 / a.mass) + (b.fixed ? 0 : 1 / b.mass));
+          const im = (-(1 + e) * velNormal) / ((a.fixed ? 0 : 1 / a.mass) + (b.fixed ? 0 : 1 / b.mass));
           const imA = a.fixed ? 0 : im / a.mass;
           const imB = b.fixed ? 0 : im / b.mass;
           if (!a.fixed) { a.vx -= imA * nx; a.vy -= imA * ny; }
@@ -577,10 +577,10 @@ World.prototype.substep = function(h, mode) {
         const pen = (pipe.r - dist) + p.radius;
         if (pen > 0) {
           p.x += nx * pen; p.y += ny * pen;
-          const vn = -(p.vx * nx + p.vy * ny);
-          if (vn > 0) {
+          const velNormal = -(p.vx * nx + p.vy * ny);
+          if (velNormal > 0) {
             const e = (pipe.restitution ?? 0.5) * this.restitutionGlobal;
-            const vnNew = -e * vn;
+            const vnNew = -e * velNormal;
             const tx = -ny, ty = nx;
             let vt = p.vx * tx + p.vy * ty;
             const mu = pipe.friction ?? 0.2;
@@ -596,10 +596,10 @@ World.prototype.substep = function(h, mode) {
         const pen = (dist - pipe.innerR) + p.radius;
         if (pen > 0) {
           p.x -= nx * pen; p.y -= ny * pen;
-          const vn = p.vx * nx + p.vy * ny;
-          if (vn > 0) {
+          const velNormal = p.vx * nx + p.vy * ny;
+          if (velNormal > 0) {
             const e = (pipe.restitution ?? 0.5) * this.restitutionGlobal;
-            const vnNew = -e * vn;
+            const vnNew = -e * velNormal;
             const tx = -ny, ty = nx;
             let vt = p.vx * tx + p.vy * ty;
             const mu = pipe.friction ?? 0.2;

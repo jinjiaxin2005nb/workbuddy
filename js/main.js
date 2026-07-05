@@ -272,7 +272,7 @@ $$('.dd-item').forEach(item => {
     if (dd.id === 'dd-splitline') {
       const splitType = item.dataset.split;
       tools._splitLineType = splitType;
-      trigger.querySelector('span').textContent = '场分割线·' + (splitType==='line'?'直线':splitType==='circle'?'圆':'矩形');
+      trigger.querySelector('span').textContent = '场分割线·' + (splitType==='line'?'直线':splitType==='arc'?'圆弧':'矩形');
       tools.setTool('splitline');
       showHint('splitline');
     } else if (dd.id === 'dd-fillfield') {
@@ -282,6 +282,13 @@ $$('.dd-item').forEach(item => {
       trigger.querySelector('span').textContent = '填充场·' + lbl;
       tools.setTool('fillfield');
       showHint('fillfield');
+    } else if (dd.id === 'dd-graph') {
+      const gq = item.dataset.graphtype;
+      tools._graphType = gq;
+      const lbl = {s:'s-t位移',v:'v-t速度',a:'a-t加速度'}[gq]||'图像';
+      trigger.querySelector('span').textContent = '函数图像·' + lbl;
+      tools.setTool('graph');
+      showHint('graph');
     }
     dd.classList.remove('open');
     e.stopPropagation();
@@ -768,3 +775,45 @@ lastT = performance.now();
 requestAnimationFrame(tick);
 toast('爱物理已就绪 · 按空格开始仿真');
 tools.onChooseField = onChooseField;
+
+// ========== 左键菜单 ==========
+let ctxMenu = null;
+function showContextMenu(screenX, screenY, obj) {
+  hideContextMenu();
+  if (!obj) return;
+  ctxMenu = document.createElement('div');
+  ctxMenu.className = 'ctx-menu';
+  ctxMenu.style.left = screenX + 'px';
+  ctxMenu.style.top = screenY + 'px';
+  const items = [
+    { label: '复制', action: () => { duplicate(obj); } },
+    { label: '删除', action: () => { world.remove(obj.id); select(null); props.refreshTargetList(); toast('已删除'); } },
+  ];
+  if (obj.type === 'particle') {
+    items.unshift({ label: '开始仿真', action: () => { select(obj); if (!running) $('#sim-play').click(); } });
+  }
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'ctx-item';
+    btn.textContent = item.label;
+    btn.addEventListener('click', () => { item.action(); hideContextMenu(); });
+    ctxMenu.appendChild(btn);
+  });
+  document.body.appendChild(ctxMenu);
+  // 防止超出屏幕
+  const rect = ctxMenu.getBoundingClientRect();
+  if (rect.right > window.innerWidth) ctxMenu.style.left = (window.innerWidth - rect.width - 10) + 'px';
+  if (rect.bottom > window.innerHeight) ctxMenu.style.top = (window.innerHeight - rect.height - 10) + 'px';
+}
+function hideContextMenu() {
+  if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; }
+}
+document.addEventListener('click', (e) => {
+  if (ctxMenu && !ctxMenu.contains(e.target)) hideContextMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideContextMenu();
+});
+
+// 绑定左键菜单回调
+tools.onContextMenu = showContextMenu;

@@ -110,6 +110,33 @@ export class PropsPanel {
       const ta = document.createElement('textarea'); ta.value = val; ta.rows = 3;
       ta.addEventListener('input', () => onInput(ta.value));
       wrap.appendChild(ta);
+    } else if (type === 'slider') {
+      // 滑块控件：显示滑块 + 数值输入
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = opts.min ?? 0; slider.max = opts.max ?? 1;
+      slider.step = opts.step ?? 0.05; slider.value = val;
+      const numInp = document.createElement('input');
+      numInp.type = 'number'; numInp.value = val;
+      numInp.step = opts.step ?? 0.05;
+      numInp.style.cssText = 'width:55px;font-size:12px;padding:2px 4px;';
+      slider.style.cssText = 'flex:1;max-width:120px;';
+      const update = (v) => {
+        if (opts.min !== undefined) v = Math.max(opts.min, v);
+        if (opts.max !== undefined) v = Math.min(opts.max, v);
+        slider.value = v; numInp.value = Number(v).toFixed(2);
+        onInput(v);
+      };
+      slider.addEventListener('input', () => update(parseFloat(slider.value)));
+      numInp.addEventListener('change', () => update(parseFloat(numInp.value) || 0));
+      wrap.appendChild(slider); wrap.appendChild(numInp);
+    } else if (type === 'switch') {
+      // 开关控件：类似 check 但样式不同
+      const lbl = document.createElement('label'); lbl.className = 'chk';
+      const sw = document.createElement('input'); sw.type = 'checkbox'; sw.checked = !!val;
+      sw.addEventListener('change', () => onInput(sw.checked));
+      lbl.appendChild(sw); lbl.appendChild(document.createTextNode(opts.text || label));
+      wrap.appendChild(lbl);
     } else {
       const inp = document.createElement('input');
       inp.type = type; inp.value = val;
@@ -164,7 +191,7 @@ export class PropsPanel {
     b.appendChild(this.field('电荷量 q (C)', 'number', o.charge, v => { o.charge = v; this.cb.onCommit(); }, { step: 0.1 }));
     b.appendChild(this.field('半径 r (m)', 'number', o.radius, v => { o.radius = Math.max(0.05, v); this.cb.onRefresh(); this.cb.onCommit(); }, { step: 0.05 }));
     b.appendChild(this.field('形状', 'select', o.shape, v => { o.shape = v; this.cb.onRefresh(); this.cb.onCommit(); }, { options: [{ v: 'ball', t: '圆形' }, { v: 'block', t: '方块' }] }));
-    b.appendChild(this.field('弹性系数', 'number', o.restitution, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { step: 0.05 }));
+    b.appendChild(this.field('弹性系数', 'slider', o.restitution, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { min: 0, max: 1, step: 0.05 }));
     b.appendChild(this.field('摩擦系数', 'number', o.friction ?? 0.2, v => { o.friction = Math.max(0, v); this.cb.onCommit(); }, { step: 0.05 }));
     b.appendChild(this.field('固定', 'check', o.fixed, v => { o.fixed = v; this.cb.onCommit(); }, { text: '固定此质点（不动）' }));
     b.appendChild(this.field('显示受力', 'check', !!o.showForces, v => { o.showForces = v; this.cb.onRefresh(); }, { text: '在质点上显示受力箭头' }));
@@ -173,7 +200,7 @@ export class PropsPanel {
   surfaceFields(o, b) {
     b.appendChild(this.makeTitle('地面属性'));
     b.appendChild(this.field('动摩擦系数 μ', 'number', o.friction, v => { o.friction = Math.max(0, v); this.cb.onCommit(); }, { step: 0.05 }));
-    b.appendChild(this.field('弹性系数 e', 'number', o.restitution, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { step: 0.05 }));
+    b.appendChild(this.field('弹性系数 e', 'slider', o.restitution, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { min: 0, max: 1, step: 0.05 }));
     if (o.type === 'conveyor') {
       b.appendChild(this.field('传送带速度 (m/s)', 'number', o.velocity, v => { o.velocity = v; this.cb.onCommit(); }, { step: 0.1 }));
     }
@@ -190,7 +217,7 @@ export class PropsPanel {
     b.appendChild(this.field('起始角 (°)', 'number', (o.a0 * 180 / Math.PI).toFixed(0), v => { o.a0 = v * Math.PI / 180; this.cb.onRefresh(); this.cb.onCommit(); }, { step: 5 }));
     b.appendChild(this.field('终止角 (°)', 'number', (o.a1 * 180 / Math.PI).toFixed(0), v => { o.a1 = v * Math.PI / 180; this.cb.onRefresh(); this.cb.onCommit(); }, { step: 5 }));
     b.appendChild(this.field('动摩擦系数', 'number', o.friction, v => { o.friction = Math.max(0, v); this.cb.onCommit(); }, { step: 0.05 }));
-    b.appendChild(this.field('弹性系数', 'number', o.restitution, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { step: 0.05 }));
+    b.appendChild(this.field('弹性系数', 'slider', o.restitution, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { min: 0, max: 1, step: 0.05 }));
   }
 
   springFields(o, b) {
@@ -282,7 +309,7 @@ export class PropsPanel {
     b.appendChild(this.field('外半径 r (m)', 'number', fmt(o.r), v => { o.r = Math.max(0.2, v); o.innerR = Math.min(o.innerR || v * 0.8, v - 0.1); this.cb.onRefresh(); }, { step: 0.1 }));
     b.appendChild(this.field('内半径 (m)', 'number', fmt(o.innerR), v => { o.innerR = Math.max(0.05, Math.min(v, o.r - 0.1)); this.cb.onRefresh(); }, { step: 0.05 }));
     b.appendChild(this.field('动摩擦系数', 'number', o.friction ?? 0.2, v => { o.friction = Math.max(0, v); this.cb.onCommit(); }, { step: 0.05 }));
-    b.appendChild(this.field('弹性系数', 'number', o.restitution ?? 0.5, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { step: 0.05 }));
+    b.appendChild(this.field('弹性系数', 'number', o.restitution ?? 0.5, v => { o.restitution = Math.max(0, Math.min(1, v)); this.cb.onCommit(); }, { min: 0, max: 1, step: 0.05 }));
   }
 
   screenFields(o, b) {
@@ -297,7 +324,7 @@ export class PropsPanel {
   helpPointFields(o, b) {
     b.appendChild(this.field('x 坐标 (m)', 'number', fmt(o.x), v => { o.x = v; this.cb.onRefresh(); }, { step: 0.1 }));
     b.appendChild(this.field('y 坐标 (m)', 'number', fmt(o.y), v => { o.y = v; this.cb.onRefresh(); }, { step: 0.1 }));
-    b.appendChild(this.field('形状', 'select', o.shape || 'circle', v => { o.shape = v; this.cb.onRefresh(); }, { options: [{ v: 'circle', t: '圆形' }, { v: 'cross', t: '十字' }, { v: 'diamond', t: '菱形' }] }));
+    b.appendChild(this.field('形状', 'select', o.shape || 'arc', v => { o.shape = v; this.cb.onRefresh(); }, { options: [{ v: 'arc', t: '圆形' }, { v: 'cross', t: '十字' }, { v: 'diamond', t: '菱形' }] }));
     b.appendChild(this.field('标注文字', 'text', o.text || '', v => { o.text = v; this.cb.onRefresh(); this.cb.onCommit(); }));
     b.appendChild(this.field('字号', 'number', o.size ?? 11, v => { o.size = v; this.cb.onRefresh(); }, { step: 1 }));
   }
@@ -351,7 +378,7 @@ export class PropsPanel {
       b.appendChild(this.field('起点 Y', 'number', o.y1 || 0, v => { o.y1 = v; this.onDirty(); }, { step: 0.1 }));
       b.appendChild(this.field('终点 X', 'number', o.x2 || 1, v => { o.x2 = v; this.onDirty(); }, { step: 0.1 }));
       b.appendChild(this.field('终点 Y', 'number', o.y2 || 1, v => { o.y2 = v; this.onDirty(); }, { step: 0.1 }));
-    } else if (shape === 'circle') {
+    } else if (shape === 'arc') {
       b.appendChild(this.field('圆心 X', 'number', o.cx || 0, v => { o.cx = v; this.onDirty(); }, { step: 0.1 }));
       b.appendChild(this.field('圆心 Y', 'number', o.cy || 0, v => { o.cy = v; this.onDirty(); }, { step: 0.1 }));
       b.appendChild(this.field('半径', 'number', o.r || 2, v => { o.r = Math.max(0.1, v); this.onDirty(); }, { step: 0.1 }));

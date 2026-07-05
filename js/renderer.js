@@ -522,7 +522,7 @@ export class Renderer {
         if (!p.x2 && !p.y2) return;
         const a = cam.s(p.x1 || 0, p.y1 || 0), b = cam.s(p.x2 || 1, p.y2 || 1);
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-      } else if (shape === 'circle') {
+      } else if (shape === 'arc') {
         if (!p.r && p.r !== 0) return;
         const c = cam.s(p.cx || 0, p.cy || 0);
         const rr = (p.r || 1) * cam.scale;

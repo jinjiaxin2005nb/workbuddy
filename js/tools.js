@@ -113,7 +113,11 @@ export class Tools {
       if (e.shiftKey) { this.boxSel = { x0: w.x, y0: w.y, x1: w.x, y1: w.y }; return; }
       const hit = this.hitTest(w);
       this.onSelect(hit);
-      if (hit) this.drag = { obj: hit, ox: hit.x, oy: hit.y, wx: w.x, wy: w.y, moved: false };
+      if (hit) {
+        this.drag = { obj: hit, ox: hit.x, oy: hit.y, wx: w.x, wy: w.y, moved: false };
+        // 触发左键菜单
+        if (this.onContextMenu) this.onContextMenu(e.clientX, e.clientY, hit);
+      }
       return;
     }
 
@@ -153,8 +157,13 @@ export class Tools {
         }
         break;
       }
-      case 'emfield': case 'graph': {
-        this.drawing = { type: this.tool, x: sw.x, y: sw.y, w: 0, h: 0, _sx: sw.x, _sy: sw.y };
+      case 'emfield': {
+        this.drawing = { type: 'emfield', x: sw.x, y: sw.y, w: 0, h: 0, _sx: sw.x, _sy: sw.y };
+        break;
+      }
+      case 'graph': {
+        const gq = this._graphType || 'v';
+        this.drawing = { type: 'graph', x: sw.x, y: sw.y, w: 0, h: 0, _sx: sw.x, _sy: sw.y, quantity: gq };
         break;
       }
       case 'source': {
@@ -175,8 +184,8 @@ export class Tools {
         if (!this.drawing) {
           if (splitType === 'line') {
             this.drawing = { type: 'splitLine', shape: 'line', x1: sw.x, y1: sw.y, x2: sw.x, y2: sw.y };
-          } else if (splitType === 'circle') {
-            this.drawing = { type: 'splitLine', shape: 'circle', cx: sw.x, cy: sw.y, r: 0, dragging: true };
+          } else if (splitType === 'arc') {
+            this.drawing = { type: 'splitLine', shape: 'arc', cx: sw.x, cy: sw.y, r: 0, dragging: true };
           } else if (splitType === 'rect') {
             this.drawing = { type: 'splitLine', shape: 'rect', rx: sw.x, ry: sw.y, rw: 0, rh: 0, _sx: sw.x, _sy: sw.y };
           }
@@ -184,7 +193,7 @@ export class Tools {
           if (splitType === 'line') {
             this.drawing.x2 = sw.x; this.drawing.y2 = sw.y;
             this._finishSplitLine();
-          } else if (splitType === 'circle') {
+          } else if (splitType === 'arc') {
             this.drawing.dragging = false; this._finishSplitLine();
           } else if (splitType === 'rect') {
             this.drawing.rw = sw.x - this.drawing._sx;
@@ -289,7 +298,7 @@ export class Tools {
       } else if (o.type === 'splitLine') {
         if (o.shape === 'line') {
           o.x2 = sw.x; o.y2 = sw.y;
-        } else if (o.shape === 'circle') {
+        } else if (o.shape === 'arc') {
           o.r = V.dist({ x: o.cx, y: o.cy }, sw);
         } else if (o.shape === 'rect') {
           o.rw = sw.x - o.rx; o.rh = sw.y - o.ry;
@@ -400,7 +409,9 @@ export class Tools {
   }
   _finishRect() {
     const d = this.drawing;
-    const o = make(d.type, { x: d.x, y: d.y, w: d.w, h: d.h });
+    const opts = { x: d.x, y: d.y, w: d.w, h: d.h };
+    if (d.type === 'graph' && d.quantity) opts.quantity = d.quantity;
+    const o = make(d.type, opts);
     this.world.add(o); this.drawing = null; this.r.preview = null;
     this.onSelect(o); this.onCommit(); this.onToast(`已添加${d.type === 'emfield' ? '电磁场' : d.type === 'screen' ? '荧光屏' : '函数图像'}`);
   }
@@ -454,7 +465,7 @@ export class Tools {
     if (!d) { this.drawing = null; this.r.preview = null; return; }
     if (d.shape === 'line') {
       if (V.dist({ x: d.x1, y: d.y1 }, { x: d.x2, y: d.y2 }) < 0.15) { this.drawing = null; this.r.preview = null; return; }
-    } else if (d.shape === 'circle') {
+    } else if (d.shape === 'arc') {
       if ((d.r || 0) < 0.15) { this.drawing = null; this.r.preview = null; return; }
     } else if (d.shape === 'rect') {
       if (Math.abs(d.rw) < 0.15 || Math.abs(d.rh) < 0.15) { this.drawing = null; this.r.preview = null; return; }

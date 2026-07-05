@@ -210,3 +210,32 @@ input,select{font-family:inherit;font-size:13px}
 .dd-item span{white-space:nowrap}
 
 .modal-mask[hidden]{display:none!important}
+
+/* ===== 左键菜单 ===== */
+.ctx-menu{
+  position:fixed;z-index:9999;min-width:120px;
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);
+  padding:4px 0;
+}
+.ctx-item{
+  display:block;width:100%;padding:8px 16px;border:none;background:none;
+  font-size:13px;color:var(--ink);cursor:pointer;text-align:left;
+  transition:background .1s;
+}
+.ctx-item:hover{background:var(--brand-l);color:var(--brand-d)}
+
+/* ===== 滑块控件 ===== */
+.fld input[type="range"]{
+  -webkit-appearance:none;height:6px;border-radius:3px;
+  background:var(--line);outline:none;cursor:pointer;
+}
+.fld input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--brand);cursor:pointer;border:2px solid #fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.fld input[type="range"]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;background:var(--brand);
+  cursor:pointer;border:2px solid #fff;
+}

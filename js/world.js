@@ -33,17 +33,21 @@ function segIntersect(a1, a2, b1, b2) {
 // 获取 splitLine 对象的所有线段
 export function getSplitSegments(sl) {
   const segs = [];
-  const { shape, x1, y1, x2, y2, cx, cy, r, rx, ry, rw, rh } = sl;
+  const { shape, x1, y1, x2, y2, cx, cy, r, rx, ry, rw, rh, a0, a1 } = sl;
   if (shape === 'line') {
     segs.push({ p1: { x: x1, y: y1 }, p2: { x: x2, y: y2 } });
-  } else if (shape === 'circle') {
-    const N = 36;
+  } else if (shape === 'arc' || shape === 'circle') {
+    // 圆弧：支持 a0/a1 角度范围（弧度），默认完整圆
+    const startA = a0 ?? 0;
+    let endA = a1 ?? (2 * Math.PI);
+    if (endA <= startA) endA += 2 * Math.PI; // 确保逆时针
+    const N = Math.max(12, Math.ceil((endA - startA) / (Math.PI / 18)));
     for (let i = 0; i < N; i++) {
-      const a0 = 2 * Math.PI * i / N;
-      const a1 = 2 * Math.PI * (i + 1) / N;
+      const aa = startA + (endA - startA) * i / N;
+      const ab = startA + (endA - startA) * (i + 1) / N;
       segs.push({
-        p1: { x: cx + r * Math.cos(a0), y: cy + r * Math.sin(a0) },
-        p2: { x: cx + r * Math.cos(a1), y: cy + r * Math.sin(a1) }
+        p1: { x: cx + r * Math.cos(aa), y: cy + r * Math.sin(aa) },
+        p2: { x: cx + r * Math.cos(ab), y: cy + r * Math.sin(ab) }
       });
     }
   } else if (shape === 'rect') {
@@ -238,6 +242,7 @@ export function make(type, opts = {}) {
         x1: opts.x1 ?? 0, y1: opts.y1 ?? 0,
         x2: opts.x2 ?? 1, y2: opts.y2 ?? 1,
         cx: opts.cx ?? 0, cy: opts.cy ?? 0, r: opts.r ?? 2,
+        a0: opts.a0 ?? 0, a1: opts.a1 ?? (2 * Math.PI),
         rx: opts.rx ?? -2, ry: opts.ry ?? -2,
         rw: opts.rw ?? 4, rh: opts.rh ?? 4,
       });

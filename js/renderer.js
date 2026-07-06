@@ -362,9 +362,10 @@ export class Renderer {
     const segs = getSplitSegments(o);
     ctx.strokeStyle = o.color || '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([]);
     ctx.beginPath();
-    for (const s of segs) {
-      const a = cam.s(s.p1.x, s.p1.y), b = cam.s(s.p2.x, s.p2.y);
-      if (s === segs[0]) ctx.moveTo(a.x, a.y); else ctx.lineTo(b.x, b.y);
+    for (let i = 0; i < segs.length; i++) {
+      const a = cam.s(segs[i].p1.x, segs[i].p1.y), b = cam.s(segs[i].p2.x, segs[i].p2.y);
+      if (i === 0) ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
     }
     ctx.stroke();
     const mid = segs[Math.floor(segs.length / 2)];
@@ -485,9 +486,10 @@ export class Renderer {
       ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = (o.thickness || 0.12) * cam.scale + 4;
       ctx.setLineDash([5, 3]);
       ctx.beginPath();
-      for (const s of segs) {
-        const a = cam.s(s.p1.x, s.p1.y), b = cam.s(s.p2.x, s.p2.y);
-        if (s === segs[0]) ctx.moveTo(a.x, a.y); else ctx.lineTo(b.x, b.y);
+      for (let i = 0; i < segs.length; i++) {
+        const a = cam.s(segs[i].p1.x, segs[i].p1.y), b = cam.s(segs[i].p2.x, segs[i].p2.y);
+        if (i === 0) ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
       }
       ctx.stroke(); ctx.setLineDash([]);
     } else if (o.type === 'fieldPoly') {

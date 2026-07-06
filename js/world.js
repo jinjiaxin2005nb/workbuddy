@@ -26,8 +26,9 @@ function segIntersect(a1, a2, b1, b2) {
   const t = ((b1.x - a1.x) * dy2 - (b1.y - a1.y) * dx2) / denom;
   const u = ((b1.x - a1.x) * dy1 - (b1.y - a1.y) * dx1) / denom;
   if (t < -1e-9 || t > 1 + 1e-9 || u < -1e-9 || u > 1 + 1e-9) return null;
-  return { t: Math.max(0, Math.min(1, t)), u: Math.max(0, Math.min(1, u)),
-    pt: { x: a1.x + t * dx1, y: a1.y + t * dy1 } };
+  const ct = Math.max(0, Math.min(1, t)), cu = Math.max(0, Math.min(1, u));
+  return { t: ct, u: cu,
+    pt: { x: a1.x + ct * dx1, y: a1.y + ct * dy1 } };
 }
 
 // 获取 splitLine 对象的所有线段
@@ -168,7 +169,7 @@ export function make(type, opts = {}) {
         showForces: false,
         Fg: { x: 0, y: 0 }, Fe: { x: 0, y: 0 },
         Fm: { x: 0, y: 0 }, Fn: { x: 0, y: 0 },
-        Ff: { x: 0, y: 0 }, Ft: { x: 0, y: 0 },
+        Ff: { x: 0, y: 0 }, Fs: { x: 0, y: 0 }, Ft: { x: 0, y: 0 },
       });
     case 'ground':
       return Object.assign(base, {
@@ -671,8 +672,10 @@ World.prototype.emitSources = function(dt) {
       s._acc -= 1;
       s._t += 1 / s.rate;
       const scope = { t: s._t, pi: Math.PI };
-      const vx = evalExpr(s.vxExpr, scope) || s.speed;
-      const vy = evalExpr(s.vyExpr, scope) || 0;
+      const vxRaw = evalExpr(s.vxExpr, scope);
+      const vyRaw = evalExpr(s.vyExpr, scope);
+      const vx = isFinite(vxRaw) ? vxRaw : s.speed;
+      const vy = isFinite(vyRaw) ? vyRaw : 0;
       const p = make('particle', {
         x: s.x, y: s.y,
         vx: isFinite(vx) ? vx : s.speed, vy: isFinite(vy) ? vy : 0,

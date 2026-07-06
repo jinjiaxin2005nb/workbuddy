@@ -324,7 +324,7 @@ export class PropsPanel {
   helpPointFields(o, b) {
     b.appendChild(this.field('x 坐标 (m)', 'number', fmt(o.x), v => { o.x = v; this.cb.onRefresh(); }, { step: 0.1 }));
     b.appendChild(this.field('y 坐标 (m)', 'number', fmt(o.y), v => { o.y = v; this.cb.onRefresh(); }, { step: 0.1 }));
-    b.appendChild(this.field('形状', 'select', o.shape || 'arc', v => { o.shape = v; this.cb.onRefresh(); }, { options: [{ v: 'arc', t: '圆形' }, { v: 'cross', t: '十字' }, { v: 'diamond', t: '菱形' }] }));
+    b.appendChild(this.field('形状', 'select', o.shape || 'circle', v => { o.shape = v; this.cb.onRefresh(); }, { options: [{ v: 'circle', t: '圆形' }, { v: 'cross', t: '十字' }, { v: 'diamond', t: '菱形' }] }));
     b.appendChild(this.field('标注文字', 'text', o.text || '', v => { o.text = v; this.cb.onRefresh(); this.cb.onCommit(); }));
     b.appendChild(this.field('字号', 'number', o.size ?? 11, v => { o.size = v; this.cb.onRefresh(); }, { step: 1 }));
   }
@@ -366,7 +366,7 @@ export class PropsPanel {
   // ===== 场分割线属性面板 =====
   splitLineFields(o, b) {
     b.appendChild(this.makeTitle('场分割线'));
-    const shapeMap = { line: '直线', circle: '圆形', rect: '矩形' };
+    const shapeMap = { line: '直线', arc: '圆弧', rect: '矩形' };
     const shapeOpts = Object.entries(shapeMap).map(([v, t]) => ({ v, t }));
     b.appendChild(this.field('形状', 'select', o.shape || 'line', v => {
       o.shape = v; this.render(); this.onDirty();

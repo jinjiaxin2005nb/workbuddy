@@ -4,7 +4,8 @@ import { World, make, GRAVITY_DEFAULT } from './world.js';
 import { Renderer } from './renderer.js';
 import { Tools } from './tools.js';
 import { PropsPanel } from './props.js';
-import { evalExpr, TAU } from './util.js';
+import { evalExpr, TAU, fmt } from './util.js';
+import { pointInPolygon } from './world.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -125,6 +126,7 @@ function reset() {
 // ========== 仿真循环 ==========
 function setRunning(r) {
   running = r;
+  renderer.running = r;
   const icon = $('#play-icon');
   const lbl = $('#play-label');
   const tag = $('#mode-tag');
@@ -235,8 +237,9 @@ function showHint(t) {
   };
   const h = $('#hint'); h.textContent = hints[t] || ''; h.classList.add('show');
   clearTimeout(showHint._t); showHint._t = setTimeout(() => h.classList.remove('show'), 2600);
+}
 
-// ========= 下拉菜单（场分割线 / 填充场）=========
+// ========= 下拉菜单（场分割线 / 填充场 / 函数图像）=========
 // 下拉触发按钮点击
 $$('.tool-dd-trigger').forEach(btn => {
   btn.addEventListener('click', e => {
@@ -294,8 +297,6 @@ $$('.dd-item').forEach(item => {
     e.stopPropagation();
   });
 });
-
-}
 
 // 视图控制
 const vcMap = { 'vc-grid': 'grid', 'vc-axis': 'axis', 'vc-ruler': 'ruler', 'vc-trail': 'trail', 'vc-vel': 'vel' };
@@ -372,24 +373,22 @@ $$('.module').forEach(m => m.addEventListener('click', () => {
 // 键盘
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-  const k = e.key.toLowerCase();
-  // 工具快捷键（R 保留给重置，摆线改用 O）
-  const map = { v: 'select', h: 'pan', p: 'particle', g: 'ground', a: 'arcground', c: 'conveyor', s: 'spring', o: 'rope', e: 'emfield', n: 'source', t: 'text', f: 'graph',
-    // V2 新增快捷键
-    I: 'interpsource', // 插值粒子源
-    D: 'formulasource', // 公式粒子源
-    k: 'pipe', // 圆管
-    X: 'screen', // 荧光屏
-    P: 'helppoint', // 辅助点
-    U: 'helpline', // 辅助线
-    E: 'efield', // 电场
-    B: 'bfield', // 磁场
+  const k = e.key; // 保留大小写
+  const kl = k.toLowerCase(); // 小写版本用于控制键
+  // 工具快捷键（区分大小写：小写=基本工具，大写=扩展工具）
+  const map = {
+    v: 'select', h: 'pan', p: 'particle', g: 'ground', a: 'arcground',
+    c: 'conveyor', s: 'spring', o: 'rope', e: 'emfield', n: 'source',
+    t: 'text', f: 'graph', k: 'pipe',
+    // 大写快捷键
+    I: 'interpsource', D: 'formulasource', X: 'screen',
+    P: 'helppoint', U: 'helpline',
   };
   if (map[k]) { const btn = document.querySelector(`.tool[data-tool="${map[k]}"]`); if (btn) btn.click(); }
-  if (k === ' ') { e.preventDefault(); $('#sim-play').click(); }
-  if (k === '.') { e.preventDefault(); $('#sim-step').click(); }
-  if (k === 'r') { e.preventDefault(); $('#sim-reset').click(); }
-  if (k === 'enter' && tools.drawing) tools.finishDrawing();
+  if (kl === ' ') { e.preventDefault(); $('#sim-play').click(); }
+  if (kl === '.') { e.preventDefault(); $('#sim-step').click(); }
+  if (kl === 'r' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); $('#sim-reset').click(); }
+  if (kl === 'enter' && tools.drawing) tools.finishDrawing();
   if (k === 'escape') { tools.cancelDrawing(); select(null); }
   if (k === 'delete' || k === 'backspace') { if (renderer.selected) $('#prop-delete').click(); }
   if (e.ctrlKey && k === 'z') { toast('撤销（演示版）'); }

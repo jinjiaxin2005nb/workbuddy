@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #1f242c;
+  color: #e6ebf2;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#__next,
+main {
+  height: 100%;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3d4654;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4d5664;
+}
+
+/* 输入框 */
+input,
+textarea {
+  font-family: inherit;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 开关 */
+.iwuli-switch {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  background: #3d4654;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.iwuli-switch.on {
+  background: #3d8bff;
+}
+.iwuli-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.iwuli-switch.on::after {
+  transform: translateX(16px);
+}
+
+/* 滑块 */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: #3d4654;
+  border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  width: 14px;
+  height: 14px;
+  background: #3d8bff;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+/* 工具按钮 hover */
+.tool-btn {
+  transition: background 0.15s, color 0.15s;
+}
+.tool-btn:hover {
+  background: #323a46;
+}
+.tool-btn.active {
+  background: #3d8bff;
+  color: #fff;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
